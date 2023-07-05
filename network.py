@@ -36,7 +36,7 @@ class Network:
         # will be assigned case by case depending on the optimization tasks.
         self.tasks = [
                 Task(
-                    memory = random.uniform(TASK_MIN_MEMORY, TASK_MAX_MEMORY),
+                    memory = round(random.uniform(TASK_MIN_MEMORY, TASK_MAX_MEMORY), 2),
                     user_id = random.randrange(N_USERS)
                 ) for _ in range(N_TASKS)]
 
@@ -71,12 +71,7 @@ class Network:
     def getNodeOccupiedMemory(self, node_id):
         """Get node's available memory considering the amount of tasks being
         executed on it"""
-        total_task_mem = sum(
-                map(
-                    lambda t: t.memory,
-                    [t for t in self.tasks if t.node_id == node_id]
-                )
-            )
+        total_task_mem = sum([t.memory for t in self.tasks if t.node_id == node_id])
         return total_task_mem
 
     def getNodeAvailableMemory(self, node_id):
@@ -109,8 +104,15 @@ class Network:
     def getNodeExecutingTasks(self, node_id):
         """Get the list of tasks assigned to a server node."""
         return [t for t in self.tasks if t.node_id == node_id]
+
+    # NumPy arrays
+    def getTaskMemoryArray(self):
+        return np.array([t.memory for t in self.tasks])
+
+    def getNodeMemoryArray(self):
+        return np.array([n.memory for n in self.nodes])
     
-    # Matrices
+    # NumPy matrices
     def getUserNodeDistanceMatrix(self):
         """Get the distance matrix from the users (rows) to the server nodes
         (columns) using Dijkstra's algorithm."""
@@ -129,6 +131,14 @@ class Network:
             instances[t.id, t.node_id] += 1
         return instances
 
+    def getTaskNodeMemoryMatrix(self):
+        """Assuming each task can only be assigned to a single node, we can
+        derive the following matrix"""
+        memory = np.zeros((N_TASKS, N_NODES), dtype=np.float64)
+        for t in self.tasks:
+            memory[t.id, t.node_id] = t.memory
+        return memory
+
 
     # MANAGEMENT
     # ==========================================================================
@@ -140,3 +150,4 @@ class Network:
     def removeTask(self, task_id, node_id=-1):
         """Remove task from server node"""
         self.tasks[task_id].node_id = -1
+

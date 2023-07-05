@@ -24,18 +24,30 @@ if __name__ == "__main__":
     for i in range(N_TASKS):
         ntw.assignTask(i, random.randrange(N_NODES))
 
-    print("Task/Node assignment matrix:")
-    print(ntw.getTaskNodeAssignmentMatrix())
-    print()
-
     print("Executing tasks on each node:")
     for n in range(N_NODES):
         print(f"\tNode {n}:", ntw.getNodeExecutingTasks(n))
     print()
 
-    try:
-        while True:
-            ntw.displayGraph()
-    except KeyboardInterrupt:
-        pass
+    print("Task/Node assignment matrix:")
+    print(ntw.getTaskNodeAssignmentMatrix())
+    print()
+
+    print("Task memory list:")
+    print(ntw.getTaskMemoryArray())
+    print()
+
+    print("Node memory list:")
+    print(ntw.getNodeMemoryArray())
+    print()
+
+    print("Task memory assigned to each node matrix:")
+    print(ntw.getTaskNodeMemoryMatrix())
+    print()
+
+#    try:
+#        while True:
+#            ntw.displayGraph()
+#    except KeyboardInterrupt:
+#        pass
 
