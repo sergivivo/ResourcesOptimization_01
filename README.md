@@ -3,7 +3,7 @@ Application developed in Python for genetic optimisation of resources in the con
 
 ## Dependencies
 Following libraries must be installed for the program to successfully execute.
-- python
-- networkx
-- pymoo
-- numpy
+- Python 3.8.10
+- NetworkX 3.1
+- pymoo 0.6.0.1
+- NumPy 1.24.2
