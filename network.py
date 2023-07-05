@@ -2,6 +2,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
+import random
+
 from config import *
 from ntw_functions import gnp_random_connected_graph_weighted, add_users
 from ntw_classes import Node, User, Task
