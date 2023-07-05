@@ -45,9 +45,9 @@ if __name__ == "__main__":
     print(ntw.getTaskNodeMemoryMatrix())
     print()
 
-#    try:
-#        while True:
-#            ntw.displayGraph()
-#    except KeyboardInterrupt:
-#        pass
+    try:
+        while True:
+            ntw.displayGraph()
+    except KeyboardInterrupt:
+        pass
 
