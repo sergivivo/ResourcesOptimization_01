@@ -1,18 +1,19 @@
 from network import Network
-from config import *
+from parameters import configs
 
 import random
+import numpy as np
 
 # MAIN
 # ==============================================================================
 
 if __name__ == "__main__":
-    random.seed(SEED)
+    random.seed(configs.seed)
 
-    ntw = Network()
+    ntw = Network(configs)
 
     print("User tasks:")
-    for u in range(N_USERS):
+    for u in range(configs.n_users):
         print(f"\tUser {u}:", ntw.getUserTasks(u))
     print()
 
@@ -21,28 +22,64 @@ if __name__ == "__main__":
     print()
 
     # Randomly assign tasks to nodes without checking limits
-    for i in range(N_TASKS):
-        ntw.assignTask(i, random.randrange(N_NODES))
+    for i in range(configs.n_tasks):
+        ntw.assignTask(i, random.randrange(configs.n_nodes))
 
     print("Executing tasks on each node:")
-    for n in range(N_NODES):
+    for n in range(configs.n_nodes):
         print(f"\tNode {n}:", ntw.getNodeExecutingTasks(n))
     print()
 
+    tnam = ntw.getTaskNodeAssignmentMatrix()
     print("Task/Node assignment matrix:")
-    print(ntw.getTaskNodeAssignmentMatrix())
+    print(tnam)
     print()
 
+    npt = np.sum(tnam, axis=1)
+    print("Nodes per task list:")
+    print(npt)
+    print()
+
+    print("Less than 2 nodes?")
+    print(np.all(npt < 2))
+    print()
+
+    tpn = np.sum(tnam, axis=0)
+    print("Tasks per node list:")
+    print(tpn)
+    print()
+
+    tma = ntw.getTaskMemoryArray()
     print("Task memory list:")
-    print(ntw.getTaskMemoryArray())
+    print(tma)
     print()
 
+    nma = ntw.getNodeMemoryArray()
     print("Node memory list:")
-    print(ntw.getNodeMemoryArray())
+    print(nma)
     print()
 
+    tnmm = ntw.getTaskNodeMemoryMatrix()
     print("Task memory assigned to each node matrix:")
-    print(ntw.getTaskNodeMemoryMatrix())
+    print(tnmm)
+    print()
+
+    tmpn = np.sum(tnmm, axis=0)
+    print("Total task memory assigned to each node:")
+    print(tmpn)
+    print()
+
+    print("Remaining memory on each node:")
+    print(nma - tmpn)
+    print()
+
+    print("Enough memory?")
+    print(nma > tmpn)
+    print(np.all(nma > tmpn))
+    print()
+
+    print("Exporting network to gfx...")
+    ntw.export("network.gxf")
     print()
 
     try:

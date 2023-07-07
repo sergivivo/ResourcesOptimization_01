@@ -5,7 +5,10 @@ import random
 def gnp_random_connected_graph_weighted(n, p, minw=0., maxw=1., roundw=1):
     """
     Generates a random undirected graph, similarly to an Erdős-Rényi 
-    graph, but enforcing that the resulting graph is conneted
+    graph, but enforcing that the resulting graph is connected
+
+    Source:
+    https://stackoverflow.com/questions/61958360/how-to-create-random-graph-where-each-node-has-at-least-1-edge-using-networkx/61961881#61961881
     """
     edges = combinations(range(n), 2)
     G = nx.Graph()

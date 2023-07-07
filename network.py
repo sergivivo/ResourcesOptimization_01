@@ -4,7 +4,6 @@ import numpy as np
 
 import random
 
-from config import *
 from ntw_functions import gnp_random_connected_graph_weighted, add_users
 from ntw_classes import Node, User, Task
 
@@ -16,29 +15,29 @@ class Network:
     the graph resulting of the connection between these nodes. It will also
     give valuable information needed for the optimizations.
     """
-    def __init__(self):
+    def __init__(self, conf):
         # Generate the graph
-        self.graph = gnp_random_connected_graph_weighted(N_NODES, P, MIN_WEIGHT, MAX_WEIGHT)
-        add_users(self.graph, N_USERS, MIN_WEIGHT, MAX_WEIGHT)
+        self.graph = gnp_random_connected_graph_weighted(conf.n_nodes, conf.p, conf.min_weight, conf.max_weight)
+        add_users(self.graph, conf.n_users, conf.min_weight, conf.max_weight)
 
         # Generate the management data for the servers
         self.nodes = [
                 Node(
-                    memory = random.choice(NODE_MEMORY_CHOICE),
-                    max_tasks = random.choice(NODE_MAX_TASKS_CHOICE)
-                ) for _ in range(N_NODES)]
+                    memory = random.choice(conf.node_memory_choice),
+                    max_tasks = random.choice(conf.node_max_tasks_choice)
+                ) for _ in range(conf.n_nodes)]
 
         # Generate the management data for the users
-        self.users = [User() for _ in range(N_USERS)]
+        self.users = [User() for _ in range(conf.n_users)]
 
         # Generate the management data for the services while also randomly
         # assigning these services to a single user. Servers for these tasks
         # will be assigned case by case depending on the optimization tasks.
         self.tasks = [
                 Task(
-                    memory = round(random.uniform(TASK_MIN_MEMORY, TASK_MAX_MEMORY), 2),
-                    user_id = random.randrange(N_USERS)
-                ) for _ in range(N_TASKS)]
+                    memory = round(random.uniform(conf.task_min_memory, conf.task_max_memory), 2),
+                    user_id = random.randrange(conf.n_users)
+                ) for _ in range(conf.n_tasks)]
 
     def displayGraph(self):
         """
@@ -50,12 +49,12 @@ class Network:
         plt_gnp = plt.subplot(1,1,1)
 
         pos = nx.spring_layout(self.graph)
-        color = ['lime' if node < N_NODES else 'red' for node in self.graph]
+        color = ['lime' if node < len(self.nodes) else 'red' for node in self.graph]
         nlabels = {
                 i:'{}{}'.format(
-                    'N' if i < N_NODES else 'U',
-                    i if i < N_NODES else i - N_NODES)
-                for i in range(N_NODES + N_USERS)
+                    'N' if i < len(self.nodes) else 'U',
+                    i if i < len(self.nodes) else i - len(self.nodes))
+                for i in range(len(self.nodes) + len(self.users))
             }
         nx.draw_networkx(self.graph, pos, labels=nlabels, font_size=8, font_weight='bold', node_color=color)
 
@@ -116,17 +115,17 @@ class Network:
     def getUserNodeDistanceMatrix(self):
         """Get the distance matrix from the users (rows) to the server nodes
         (columns) using Dijkstra's algorithm."""
-        distances = np.empty((N_USERS, N_NODES))
-        for uid in range(N_USERS):
-            dct = nx.single_source_dijkstra_path_length(self.graph, uid + N_NODES)
-            for nid in range(N_NODES):
+        distances = np.empty((len(self.users), len(self.nodes)))
+        for uid in range(len(self.users)):
+            dct = nx.single_source_dijkstra_path_length(self.graph, uid + len(self.nodes))
+            for nid in range(len(self.nodes)):
                 distances[uid, nid] = dct[nid]
         return distances
     
     def getTaskNodeAssignmentMatrix(self):
         """Get the matrix of the amount of instances of each task (rows) on each
         server node (columns)"""
-        instances = np.zeros((N_TASKS, N_NODES), dtype=np.int16)
+        instances = np.zeros((len(self.tasks), len(self.nodes)), dtype=np.int16)
         for t in self.tasks:
             instances[t.id, t.node_id] += 1
         return instances
@@ -134,7 +133,7 @@ class Network:
     def getTaskNodeMemoryMatrix(self):
         """Assuming each task can only be assigned to a single node, we can
         derive the following matrix"""
-        memory = np.zeros((N_TASKS, N_NODES), dtype=np.float64)
+        memory = np.zeros((len(self.tasks), len(self.nodes)), dtype=np.float64)
         for t in self.tasks:
             memory[t.id, t.node_id] = t.memory
         return memory
@@ -150,4 +149,9 @@ class Network:
     def removeTask(self, task_id, node_id=-1):
         """Remove task from server node"""
         self.tasks[task_id].node_id = -1
+
+    # FILES
+    # ==========================================================================
+    def export(self, path):
+        nx.write_gexf(self.graph, path)
 
