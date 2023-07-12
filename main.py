@@ -4,17 +4,25 @@ from parameters import configs
 import random
 import numpy as np
 
-# MAIN
-# ==============================================================================
+from problems import Problem01
 
-if __name__ == "__main__":
-    random.seed(configs.seed)
+from pymoo.algorithms.moo.nsga2 import NSGA2
+from pymoo.termination import get_termination
+from pymoo.operators.crossover.sbx import SBX
+from pymoo.operators.mutation.pm import PM
+from pymoo.operators.repair.rounding import RoundingRepair
+from pymoo.operators.sampling.rnd import IntegerRandomSampling
+from pymoo.optimize import minimize
 
-    ntw = Network(configs)
+def print_info(ntw):
 
     print("User tasks:")
     for u in range(configs.n_users):
         print(f"\tUser {u}:", ntw.getUserTasks(u))
+    print()
+
+    print("Task/User assignment matrix:")
+    print(ntw.getTaskUserAssignmentMatrix())
     print()
 
     print("User/Node distance matrix:")
@@ -78,13 +86,44 @@ if __name__ == "__main__":
     print(np.all(nma > tmpn))
     print()
 
-    print("Exporting network to gfx...")
-    ntw.export("network.gxf")
-    print()
-
+def paint_graph():
     try:
         while True:
             ntw.displayGraph()
     except KeyboardInterrupt:
         pass
+
+# MAIN
+# ==============================================================================
+
+if __name__ == "__main__":
+    random.seed(configs.seed)
+
+    ntw = Network(configs)
+
+    problem = Problem01(ntw)
+
+    algorithm = NSGA2(pop_size = configs.pop_size,
+        sampling=IntegerRandomSampling(),
+        crossover=SBX(prob=1.0, eta=3.0, vtype=float, repair=RoundingRepair()),
+        mutation=PM(prob=1.0, eta=3.0, vtype=float, repair=RoundingRepair()),
+        eliminate_duplicates=True
+    )
+
+    termination = get_termination(configs.termination_type, configs.n_gen)
+
+    res = minimize(
+        problem,
+        algorithm,
+        termination=termination,
+        seed=configs.seed,
+        verbose=False
+    )
+
+    for s in res.X:
+        print(np.array(s).reshape((ntw.getNTasks(), ntw.getNNodes())))
+
+    print(res.F)
+
+    
 

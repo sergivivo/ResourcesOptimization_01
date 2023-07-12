@@ -76,6 +76,15 @@ class Network:
     def getNodeAvailableMemory(self, node_id):
         return self.nodes[node_id].memory - getNodeOccupiedMemory(node_id)
 
+    def getNUsers(self):
+        return len(self.users)
+
+    def getNNodes(self):
+        return len(self.nodes)
+
+    def getNTasks(self):
+        return len(self.tasks)
+
     # Dataclasses
     def getUser(self, user_id):
         return self.users[user_id]
@@ -104,14 +113,42 @@ class Network:
         """Get the list of tasks assigned to a server node."""
         return [t for t in self.tasks if t.node_id == node_id]
 
-    # NumPy arrays
+    # NumPy 1D arrays
     def getTaskMemoryArray(self):
         return np.array([t.memory for t in self.tasks])
 
     def getNodeMemoryArray(self):
         return np.array([n.memory for n in self.nodes])
     
+    def getTaskDistanceArray(self, m):
+        """Returns distances of tasks to their respective users given a
+        task/node assignment matrix"""
+        tu_assign_m = self.getTaskUserAssignmentMatrix()
+        un_dist_m   = self.getUserNodeDistanceMatrix()
+
+        # Find ones of task/node matrix
+        tn_nonzeros = np.nonzero(m)
+
+        # Find ones of task/user matrix
+        tu_nonzeros = np.nonzero(tu_assign_m)
+
+        tasks = np.zeros(len(self.tasks), np.float64)
+        for i in range(len(tn_nonzeros[0])):
+            tid = tn_nonzeros[0][i]
+            x = np.where(tu_nonzeros[0] == tid)
+            for uid in x:
+                # this for is needed when a task is assigned to more than one user
+                tasks[tid] += un_dist_m[tu_nonzeros[1][uid], tn_nonzeros[1][i]]
+
+        return tasks
+
     # NumPy matrices
+    def getTaskUserAssignmentMatrix(self):
+        assignment = np.zeros((len(self.tasks), len(self.users)), dtype=np.int16)
+        for t in self.tasks:
+            assignment[t.id, t.user_id] += 1
+        return assignment
+
     def getUserNodeDistanceMatrix(self):
         """Get the distance matrix from the users (rows) to the server nodes
         (columns) using Dijkstra's algorithm."""
@@ -137,6 +174,21 @@ class Network:
         for t in self.tasks:
             memory[t.id, t.node_id] = t.memory
         return memory
+
+    def getTaskNodeMemoryMatrix(self, m):
+        """Returns a task/node memory matrix given a task/node assignment matrix"""
+        t_memory_v = self.getTaskMemoryArray()
+
+        # Find node of each task
+        tn_nonzeros = np.nonzero(m)
+
+        mm = np.zeros((len(self.tasks), len(self.nodes)))
+        for i in range(len(tn_nonzeros[0])):
+            tid = tn_nonzeros[0][i]
+            nid = tn_nonzeros[1][i]
+            mm[tid, nid] += t_memory_v[tid]
+        
+        return mm
 
 
     # MANAGEMENT
