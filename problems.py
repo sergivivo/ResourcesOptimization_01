@@ -22,11 +22,14 @@ from pymoo.operators.crossover.sbx   import SBX
 from pymoo.operators.mutation.pm     import PM
 from pymoo.operators.repair.rounding import RoundingRepair
 
+from pymoo.util.ref_dirs import get_reference_directions
+
 from pymoo.optimize import minimize
 
 import numpy as np
 import random
 
+import matplotlib.pyplot as plt
 
 
 class Problem01v1(ElementwiseProblem):
@@ -247,14 +250,15 @@ class MyCrossover(Crossover):
         return Y
 
 class MyMutation(Mutation):
-    def __init__(self):
+    """Change the position of the 1 in a row with a given probability"""
+    def __init__(self, p=0.05):
         super().__init__()
+        self.probability = p
 
     def _do(self, problem, X, **kwargs):
-        """Change the position of the 1 in a row"""
         for i in range(len(X)):
             for row in range(problem.N_TASKS):
-                if random.random() < 0.01:
+                if random.random() < self.probability:
                     newcol = random.randrange(problem.N_NODES - 1)
                     for col in range(problem.N_NODES):
                         # Search one
@@ -283,7 +287,18 @@ class MyMutation(Mutation):
 
 class MyDuplicateElimination(ElementwiseDuplicateElimination):
     def is_equal(self, a, b):
-        return np.array_equal(a.X[0], b.X[0]) 
+        return np.array_equal(a.X[0], b.X[0])
+
+
+def solveAndAddToPlot(problem, algorithm, termination, name, color):
+    res = minimize(
+        problem,
+        algorithm,
+        termination=termination,
+        seed=configs.seed,
+        verbose=True
+    )
+    plt.scatter(res.F[:, 0], res.F[:, 1], s=30, facecolors='none', edgecolors=color, label=name)
 
 
 if __name__ == '__main__':
@@ -296,36 +311,49 @@ if __name__ == '__main__':
 
     problem = Problem01v3(ntw)
 
+    fig, ax = plt.subplots()
 
+    termination = get_termination(configs.termination_type, configs.n_gen)
+
+    ### ALGORITHMS ###
+
+    # NSGA2
     algorithm = NSGA2(pop_size = configs.pop_size,
         sampling=MySampling(),
         crossover=MyCrossover(),
-        mutation=MyMutation(),
+        mutation=MyMutation(configs.mutation_prob),
         eliminate_duplicates=MyDuplicateElimination()
     )
 
-    
-    """
-    ref_points = np.array([[15., 120.], [6., 150.], [2., 240.]])
+    solveAndAddToPlot(problem, algorithm, termination, 'NSGA2', 'red')
+
+    # RNSGA2
+    ref_points = np.array([[12., 140.], [6., 160.], [2., 200.]])
 
     algorithm = RNSGA2(pop_size = configs.pop_size,
         ref_points=ref_points,
         sampling=MySampling(),
         crossover=MyCrossover(),
-        mutation=MyMutation(),
+        mutation=MyMutation(configs.mutation_prob),
         eliminate_duplicates=MyDuplicateElimination()
     )
-    """
 
-    termination = get_termination(configs.termination_type, configs.n_gen)
+    solveAndAddToPlot(problem, algorithm, termination, 'RNSGA2', 'blue')
 
+    # NSGA3
+    ref_dirs = get_reference_directions('das-dennis', 2, n_partitions=25)
 
-    res = minimize(
-        problem,
-        algorithm,
-        termination=termination,
-        seed=configs.seed,
-        verbose=True
+    algorithm = NSGA3(pop_size = configs.pop_size,
+        ref_dirs=ref_dirs,
+        sampling=MySampling(),
+        crossover=MyCrossover(),
+        mutation=MyMutation(configs.mutation_prob),
+        eliminate_duplicates=MyDuplicateElimination()
     )
 
+    solveAndAddToPlot(problem, algorithm, termination, 'NSGA3', 'green')
 
+    ### END ALGORITHMS ###
+
+    ax.legend()
+    plt.show()

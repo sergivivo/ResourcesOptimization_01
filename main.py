@@ -113,7 +113,7 @@ if __name__ == "__main__":
     algorithm = RNSGA2(pop_size = configs.pop_size,
         sampling=MySampling(),
         crossover=MyCrossover(),
-        mutation=MyMutation(),
+        mutation=MyMutation(configs.mutation_prob),
         eliminate_duplicates=MyDuplicateElimination()
     )
 

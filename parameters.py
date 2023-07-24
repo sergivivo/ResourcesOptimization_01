@@ -28,6 +28,8 @@ ALGORITHM = 'NSGA2'
 N_GEN = 100
 TERMINATION_TYPE = 'n_gen'
 
+MUTATION_PROB = 0.05
+
 
 # ARGUMENT PARSE
 # ==============================================================================
@@ -76,6 +78,8 @@ parser.add_argument('--pop_size', type=int, default=POP_SIZE, help='Population s
 parser.add_argument('--algorithm', type=str, choices=ALGORITHMS, default=ALGORITHM, help='Name of the algorithm to use for solving the problem')
 parser.add_argument('--termination_type', type=str, default=TERMINATION_TYPE, help='Termination type for the algorithm')
 parser.add_argument('--n_gen', type=int, default=N_GEN, help='Number of generations as termination parameter')
+
+parser.add_argument('--mutation_prob', type=float, choices=[Range(0.0, 1.0)], default=MUTATION_PROB, help='Probability of mutation in task assignment to nodes')
 
 # CONFIG GENERATOR
 # ==============================================================================
