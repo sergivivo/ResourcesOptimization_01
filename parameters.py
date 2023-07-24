@@ -24,8 +24,8 @@ OUTPUT_FILE = 'graph01.gefx'
 
 # Pymoo optimization problem solving
 POP_SIZE = 100
+ALGORITHM = 'NSGA2'
 N_GEN = 100
-PROBLEM_NAME = 'Problem01'
 TERMINATION_TYPE = 'n_gen'
 
 
@@ -40,6 +40,18 @@ class Range(object):
         return self.start <= other <= self.end
     def __repr__(self):
         return "[{}, {}]".format(self.start, self.end)
+
+ALGORITHMS = [
+        'NSGA2',
+        'RNSGA2',
+        'NSGA3',
+        'UNSGA3',
+        'RNSGA3',
+        'MOEAD',
+        'AGEMOEA',
+        'CTAEA',
+        'SMSEMOA',
+        'RVEA']
 
 parser = argparse.ArgumentParser(description="Arguments")
 
@@ -61,6 +73,7 @@ parser.add_argument('--n_users', type=int, default=N_USERS, help='Number of user
 
 # Pymoo optimization problem solving
 parser.add_argument('--pop_size', type=int, default=POP_SIZE, help='Population size')
+parser.add_argument('--algorithm', type=str, choices=ALGORITHMS, default=ALGORITHM, help='Name of the algorithm to use for solving the problem')
 parser.add_argument('--termination_type', type=str, default=TERMINATION_TYPE, help='Termination type for the algorithm')
 parser.add_argument('--n_gen', type=int, default=N_GEN, help='Number of generations as termination parameter')
 

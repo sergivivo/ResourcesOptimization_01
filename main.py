@@ -4,14 +4,21 @@ from parameters import configs
 import random
 import numpy as np
 
-from problems import Problem01
+from problems import Problem01v3
+from problems import MySampling
+from problems import MyCrossover
+from problems import MyMutation
+from problems import MyDuplicateElimination
 
 from pymoo.algorithms.moo.nsga2 import NSGA2
+
 from pymoo.termination import get_termination
+
 from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PM
 from pymoo.operators.repair.rounding import RoundingRepair
 from pymoo.operators.sampling.rnd import IntegerRandomSampling
+
 from pymoo.optimize import minimize
 
 def print_info(ntw):
@@ -101,14 +108,23 @@ if __name__ == "__main__":
 
     ntw = Network(configs)
 
-    problem = Problem01(ntw)
+    problem = Problem01v3(ntw)
 
-    algorithm = NSGA2(pop_size = configs.pop_size,
+    algorithm = RNSGA2(pop_size = configs.pop_size,
+        sampling=MySampling(),
+        crossover=MyCrossover(),
+        mutation=MyMutation(),
+        eliminate_duplicates=MyDuplicateElimination()
+    )
+
+    """
+    algorithm = NSGA2(
         sampling=IntegerRandomSampling(),
         crossover=SBX(prob=1.0, eta=3.0, vtype=float, repair=RoundingRepair()),
         mutation=PM(prob=1.0, eta=3.0, vtype=float, repair=RoundingRepair()),
         eliminate_duplicates=True
     )
+    """
 
     termination = get_termination(configs.termination_type, configs.n_gen)
 
@@ -117,13 +133,13 @@ if __name__ == "__main__":
         algorithm,
         termination=termination,
         seed=configs.seed,
-        verbose=False
+        verbose=True
     )
 
-    for s in res.X:
-        print(np.array(s).reshape((ntw.getNTasks(), ntw.getNNodes())))
-
-    print(res.F)
+    for i in range(len(res.X)):
+        print(res.X[i][0])
+        print(res.F[i])
+        print()
 
     
 

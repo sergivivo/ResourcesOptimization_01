@@ -114,6 +114,16 @@ class Network:
         return [t for t in self.tasks if t.node_id == node_id]
 
     # NumPy 1D arrays
+    def getTaskUserAssignedArray(self):
+        """Given that a task can only be assigned to an user, we can simplify
+        the operations that retrieve this information"""
+        return np.array([t.user_id for t in self.tasks])
+
+    def getTaskNodeAssignedArray(self):
+        """Given that a task can only be assigned to a node, we can simplify
+        the operations that retrieve this information"""
+        return np.array([t.node_id for t in self.tasks])
+
     def getTaskMemoryArray(self):
         return np.array([t.memory for t in self.tasks])
 
@@ -158,7 +168,7 @@ class Network:
             for nid in range(len(self.nodes)):
                 distances[uid, nid] = dct[nid]
         return distances
-    
+
     def getTaskNodeAssignmentMatrix(self):
         """Get the matrix of the amount of instances of each task (rows) on each
         server node (columns)"""
@@ -166,6 +176,15 @@ class Network:
         for t in self.tasks:
             instances[t.id, t.node_id] += 1
         return instances
+
+    def getTaskNodeAssignmentMatrix(self, array):
+        """Get the matrix of the amount of instances of each task (rows) on each
+        server node (columns) given an array of integers"""
+        assignment = np.zeros((len(self.tasks), len(self.nodes)), dtype=np.int16)
+        for tid in range(len(array)):
+            if 0 <= array[tid]:
+                assignment[tid, array[tid]] += 1
+        return assignment
 
     def getTaskNodeMemoryMatrix(self):
         """Assuming each task can only be assigned to a single node, we can
