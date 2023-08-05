@@ -3,27 +3,10 @@ from pymoo.core.sampling  import Sampling
 from pymoo.core.crossover import Crossover
 from pymoo.core.mutation  import Mutation
 from pymoo.core.duplicate import ElementwiseDuplicateElimination
-
-from pymoo.algorithms.moo.nsga2  import NSGA2
-from pymoo.algorithms.moo.rnsga2 import RNSGA2
-from pymoo.algorithms.moo.nsga3  import NSGA3
-from pymoo.algorithms.moo.unsga3 import UNSGA3
-from pymoo.algorithms.moo.rnsga3 import RNSGA3
-from pymoo.algorithms.moo.moead  import MOEAD
-#from pymoo.algorithms.moo.age    import AGEMOEA
-from pymoo.algorithms.moo.ctaea  import CTAEA
-from pymoo.algorithms.moo.sms    import SMSEMOA
-from pymoo.algorithms.moo.rvea   import RVEA 
+from pymoo.core.repair    import Repair
 
 from pymoo.termination import get_termination
-
-from pymoo.operators.sampling.rnd    import IntegerRandomSampling
-from pymoo.operators.crossover.sbx   import SBX
-from pymoo.operators.mutation.pm     import PM
-from pymoo.operators.repair.rounding import RoundingRepair
-
-from pymoo.util.ref_dirs import get_reference_directions
-
+from pymoo.algorithms.moo.nsga2  import NSGA2
 from pymoo.optimize import minimize
 
 import numpy as np
@@ -38,11 +21,9 @@ class Problem01v1(ElementwiseProblem):
         - n×m variables enteras, posteriormente organizadas matricialmente,
           para la asignación de tareas (filas) a servidores (columnas).
     OBJETIVOS:
-        - Reducir el número de servicios que hay en un nodo, es decir, la suma
-          de las columnas tiene que dar valores pequeños. Minimizar promedio
-          entre tareas asignadas a servidores
+        - Minimizar el número de nodos que tienen al menos una tarea
         - Reducir la distancia entre usuario y aplicación. Minimizar la suma de
-          distancias de las tareas a sus respectivos usuarios.
+          distancias de los usuarios que acceden a cada servicio.
     RESTRICCIONES:
         - Una tarea no puede estar asignada a más de un nodo, es decir, la suma
           de las filas de la matriz es 1.
@@ -72,9 +53,8 @@ class Problem01v1(ElementwiseProblem):
     def _evaluate(self, x, out, *args, **kwargs):
         matrix = x.reshape((self.N_TASKS, self.N_NODES))
 
-        f1 = np.max(np.sum(matrix, axis=0)) # Minimizar número de tareas asignadas
-                                            # a cada servidor
-        f2 = np.sum(self.network.getTaskDistanceArray(matrix)) # Minimizar suma de distancias de tareas
+        f1 = self.network.getTasksAverageDistanceToUser(matrix)
+        f2 = np.count_nonzero(np.max(matrix, axis=0))
 
         g1 = np.max(np.sum(matrix, axis=1)) - 1 # Solo puede haber un nodo por tarea
         g2 = 1 - np.min(np.sum(matrix, axis=1)) # Todas las tareas deben estar asignadas
@@ -95,11 +75,9 @@ class Problem01v2(ElementwiseProblem):
     VARIABLES:
         - n variables enteras, para la asignación de tareas a un servidor.
     OBJETIVOS:
-        - Reducir el número de servicios que hay en un nodo, es decir, la suma
-          de las columnas tiene que dar valores pequeños. Minimizar promedio
-          entre tareas asignadas a servidores
-        - Reducir la distancia entre usuario y aplicación. Minimizar la suma de
-          distancias de las tareas a sus respectivos usuarios.
+        - Minimizar el número de nodos que tienen al menos una tarea
+        - Reducir la distancia entre usuario y aplicación. Minimizar el
+          promedio de distancias de los usuarios que acceden a cada servicio.
     RESTRICCIONES:
         - Todas las tareas deben estar asignadas (no -1)
         - Las tareas asignadas a un nodo no pueden superar su capacidad máxima
@@ -141,9 +119,8 @@ class Problem01v2(ElementwiseProblem):
     def _evaluate(self, x, out, *args, **kwargs):
         matrix = self.network.getTaskNodeAssignmentMatrix(x)
 
-        f1 = np.max(np.sum(matrix, axis=0)) # Minimizar número de tareas asignadas
-                                            # a cada servidor
-        f2 = np.sum(self.network.getTaskDistanceArray(matrix)) # Minimizar suma de distancias de tareas
+        f1 = self.network.getTasksAverageDistanceToUser(matrix)
+        f2 = np.count_nonzero(np.max(matrix, axis=0))
 
         g1 = - np.min(x) # Todas las tareas deben estar asignadas
 
@@ -163,16 +140,15 @@ class Problem01v3(ElementwiseProblem):
     VARIABLES:
         - 1 matriz de NumPy de n×m enteros, filas tareas y columnas nodos
     OBJETIVOS:
-        - Reducir el número de servicios que hay en un nodo, es decir, la suma
-          de las columnas tiene que dar valores pequeños. Minimizar promedio
-          entre tareas asignadas a servidores
+        - Minimizar el número de nodos que tienen al menos una tarea
         - Reducir la distancia entre usuario y aplicación. Minimizar la suma de
-          distancias de las tareas a sus respectivos usuarios.
+          distancias de los usuarios que acceden a cada servicio.
     RESTRICCIONES:
-        - Una tarea no puede estar asignada a más de un nodo, es decir, la suma
-          de las filas de la matriz es 1.
-        - Todas las tareas deben estar asignadas
         - Las tareas asignadas a un nodo no pueden superar su capacidad máxima
+        - Restricciones implícitas en el Sampling, Crossover y Mutation:
+            - Una tarea no puede estar asignada a más de un nodo, es decir, la
+              suma de las filas de la matriz es 1.
+            - Todas las tareas deben estar asignadas
 
     Este problema exige la implementación de clases Sampling, Crossover y
     Mutation propias para la generación de matrices de NumPy.
@@ -189,26 +165,22 @@ class Problem01v3(ElementwiseProblem):
         super().__init__(
                 n_var = 1,
                 n_obj = 2,
-                n_ieq_constr = 3)
+                n_ieq_constr = 1)
 
     def _evaluate(self, x, out, *args, **kwargs):
         matrix = x[0]
 
-        f1 = np.max(np.sum(matrix, axis=0)) # Minimizar número de tareas asignadas
-                                            # a cada servidor
-        f2 = np.sum(self.network.getTaskDistanceArray(matrix)) # Minimizar suma de distancias de tareas
-
-        g1 = np.max(np.sum(matrix, axis=1)) - 1 # Solo puede haber un nodo por tarea
-        g2 = 1 - np.min(np.sum(matrix, axis=1)) # Todas las tareas deben estar asignadas
+        f1 = self.network.getTasksAverageDistanceToUser(matrix)
+        f2 = np.count_nonzero(np.max(matrix, axis=0))
 
         assigned_memory_v = np.sum(self.network.getTaskNodeMemoryMatrix(matrix), axis=0)
-        g3 = np.max(assigned_memory_v - self.network.getNodeMemoryArray())
+        g1 = np.max(assigned_memory_v - self.network.getNodeMemoryArray())
         # La memoria restante de cada servidor no puede ser menor a cero.
         # Dicho de otro modo, al restar la memoria ocupada con la capacidad,
         # debe ser menor o igual a cero
 
         out['F'] = [f1, f2]
-        out['G'] = [g1, g2, g3]
+        out['G'] = [g1]
 
 
 
@@ -249,6 +221,38 @@ class MyCrossover(Crossover):
 
         return Y
 
+class MyRepair(Repair):
+
+    def _do(self, problem, X, **kwargs):
+        for i in range(len(X)):
+            for row in range(problem.N_TASKS):
+                available = problem.network.getNodeAvailableMemoryArray(X[i,0])
+                task_memory = problem.network.getTask(row).memory
+                curr_idx = np.nonzero(X[i, 0][row])[0]
+
+                # Check if task surpasses available memory
+                if task_memory > available[curr_idx]:
+
+                    # We search for a new node
+                    indexes = np.arange(len(available), dtype=np.uint16)
+
+                    # Filter so that we only choose between nodes with enough
+                    # available memory to hold this task
+                    filtered = indexes[available > task_memory]
+
+                    # Subtract both sets and choose a new column
+                    choices = np.setdiff1d(filtered, curr_idx)
+
+                    if choices.size > 0:
+                        # Set to zero current column
+                        X[i, 0][row, curr_idx] = 0
+
+                        # Set to one new columns
+                        col = random.choice(choices)
+                        X[i, 0][row, col] = 1
+
+        return X
+
 class MyMutation(Mutation):
     """Change the position of the 1 in a row with a given probability"""
     def __init__(self, p=0.05):
@@ -259,29 +263,26 @@ class MyMutation(Mutation):
         for i in range(len(X)):
             for row in range(problem.N_TASKS):
                 if random.random() < self.probability:
-                    newcol = random.randrange(problem.N_NODES - 1)
-                    for col in range(problem.N_NODES):
-                        # Search one
-                        if X[i, 0][row, col] == 1:
+                    available = problem.network.getNodeAvailableMemoryArray(X[i,0])
+                    indexes = np.arange(len(available), dtype=np.uint16)
 
-                            # New column choices before:
-                            #               col
-                            #                |
-                            #                v
-                            #   [0] [0] [0] [1] [0]  0
+                    # Filter so that we only choose between nodes with enough
+                    # available memory to hold this task
+                    task_memory = problem.network.getTask(row).memory
+                    filtered = indexes[available > task_memory]
 
-                            if newcol >= col:
-                                newcol += 1
+                    # Subtract both sets and choose a new column
+                    curr_idxs = np.nonzero(X[i, 0][row])
+                    choices = np.setdiff1d(filtered, curr_idxs)
 
-                            # New column choices now:
-                            #               col
-                            #                |
-                            #                v
-                            #   [0] [0] [0]  1  [0] [0]
-
+                    if choices.size > 0:
+                        # Set to zero current column
+                        for col in curr_idxs:
                             X[i, 0][row, col] = 0
-                            X[i, 0][row, newcol] = 1
-                            break
+
+                        # Set to one new columns
+                        col = random.choice(choices)
+                        X[i, 0][row, col] = 1
 
         return X
 
@@ -296,18 +297,24 @@ def solveAndAddToPlot(problem, algorithm, termination, name, color):
         algorithm,
         termination=termination,
         seed=configs.seed,
-        verbose=True
+        verbose=True,
+        save_history=False
     )
+
+    #val = [e.opt.get('F') for e in res.history]
+
     plt.scatter(res.F[:, 0], res.F[:, 1], s=30, facecolors='none', edgecolors=color, label=name)
 
 
 if __name__ == '__main__':
     from parameters import configs
     from network import Network
+    from pymoo.algorithms.moo.nsga2  import NSGA2
+    import pickle
 
     random.seed(configs.seed)
 
-    ntw = Network(configs)
+    ntw = pickle.load(configs.input)
 
     problem = Problem01v3(ntw)
 
@@ -327,8 +334,9 @@ if __name__ == '__main__':
 
     solveAndAddToPlot(problem, algorithm, termination, 'NSGA2', 'red')
 
-    # RNSGA2
-    ref_points = np.array([[12., 140.], [6., 160.], [2., 200.]])
+    """
+    # RNSGA2 (Necesita el frente de Pareto real)
+    ref_points = np.array([[18., 6.], [15., 8.], [21., 5.]]) 
 
     algorithm = RNSGA2(pop_size = configs.pop_size,
         ref_points=ref_points,
@@ -341,7 +349,7 @@ if __name__ == '__main__':
     solveAndAddToPlot(problem, algorithm, termination, 'RNSGA2', 'blue')
 
     # NSGA3
-    ref_dirs = get_reference_directions('das-dennis', 2, n_partitions=25)
+    ref_dirs = get_reference_directions('das-dennis', 2, n_partitions=12)
 
     algorithm = NSGA3(pop_size = configs.pop_size,
         ref_dirs=ref_dirs,
@@ -352,6 +360,7 @@ if __name__ == '__main__':
     )
 
     solveAndAddToPlot(problem, algorithm, termination, 'NSGA3', 'green')
+    """
 
     ### END ALGORITHMS ###
 

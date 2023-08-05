@@ -1,25 +1,11 @@
 from network import Network
 from parameters import configs
+from solve_problem import solve
+from plot import plot_evolution
 
 import random
 import numpy as np
-
-from problems import Problem01v3
-from problems import MySampling
-from problems import MyCrossover
-from problems import MyMutation
-from problems import MyDuplicateElimination
-
-from pymoo.algorithms.moo.nsga2 import NSGA2
-
-from pymoo.termination import get_termination
-
-from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PM
-from pymoo.operators.repair.rounding import RoundingRepair
-from pymoo.operators.sampling.rnd import IntegerRandomSampling
-
-from pymoo.optimize import minimize
+import csv
 
 def print_info(ntw):
 
@@ -93,7 +79,7 @@ def print_info(ntw):
     print(np.all(nma > tmpn))
     print()
 
-def paint_graph():
+def paint_graph(ntw):
     try:
         while True:
             ntw.displayGraph()
@@ -104,42 +90,41 @@ def paint_graph():
 # ==============================================================================
 
 if __name__ == "__main__":
+
     random.seed(configs.seed)
 
-    ntw = Network(configs)
+    if configs.command == 'generate':
+        ntw = Network(configs)
 
-    problem = Problem01v3(ntw)
+        if configs.print:
+            print_info(ntw)
 
-    algorithm = RNSGA2(pop_size = configs.pop_size,
-        sampling=MySampling(),
-        crossover=MyCrossover(),
-        mutation=MyMutation(configs.mutation_prob),
-        eliminate_duplicates=MyDuplicateElimination()
-    )
+        if configs.paint:
+            paint_graph(ntw)
 
-    """
-    algorithm = NSGA2(
-        sampling=IntegerRandomSampling(),
-        crossover=SBX(prob=1.0, eta=3.0, vtype=float, repair=RoundingRepair()),
-        mutation=PM(prob=1.0, eta=3.0, vtype=float, repair=RoundingRepair()),
-        eliminate_duplicates=True
-    )
-    """
+        if configs.output:
+            import pickle
+            pickle.dump(ntw, configs.output)
+            configs.output.close()
 
-    termination = get_termination(configs.termination_type, configs.n_gen)
+    elif configs.command == 'solve':
+        import pickle
+        ntw = pickle.load(configs.input)
 
-    res = minimize(
-        problem,
-        algorithm,
-        termination=termination,
-        seed=configs.seed,
-        verbose=True
-    )
+        if configs.output:
+            solutions = solve(ntw, configs)
+            if configs.save_history:
+                # Three parameters, including generation
+                for i in range(configs.n_gen):
+                    for o1, o2 in solutions[i]:
+                        configs.output.write('{} {} {}\n'.format(i+1, o1, o2))
+            else:
+                # Two parameters, last generation
+                for o1, o2 in solutions:
+                    configs.output.write('{} {}\n'.format(o1, o2))
 
-    for i in range(len(res.X)):
-        print(res.X[i][0])
-        print(res.F[i])
-        print()
-
+            configs.output.close()
     
+    elif configs.command == 'plot':
+        plot_evolution(configs)
 
