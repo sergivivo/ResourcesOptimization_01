@@ -1,11 +1,10 @@
 from network import Network
 from parameters import configs
 from solve_problem import solve
-from plot import plot_evolution
+from plot import plot_convergence, plot_scatter_legend
 
 import random
 import numpy as np
-import csv
 
 def print_info(ntw):
 
@@ -126,5 +125,8 @@ if __name__ == "__main__":
             configs.output.close()
     
     elif configs.command == 'plot':
-        plot_evolution(configs)
+        if configs.comparison:
+            plot_scatter_legend(configs)
+        if configs.history:
+            plot_convergence(configs)
 

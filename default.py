@@ -1,9 +1,9 @@
-
 # Random
 SEED = 727
 
 # Network generation
-P = 0.10
+P = 0.15
+E = 2
 MIN_WEIGHT = 5.
 MAX_WEIGHT = 20.
 
@@ -27,6 +27,8 @@ TERMINATION_TYPE = 'n_gen'
 
 MUTATION_PROB = 0.1
 
+N_PARTITIONS = 16
+REF_POINTS = '[[18., 6.], [15., 8.], [21., 5.]]'
 
 
 ALGORITHMS = [

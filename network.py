@@ -4,7 +4,7 @@ import numpy as np
 
 import random
 
-from ntw_functions import gnp_random_connected_graph_weighted, add_users
+from ntw_functions import barabasi_albert_weighted_graph, add_users
 from ntw_classes import Node, User, Task
 
 # CLASSES
@@ -16,16 +16,36 @@ class Network:
     give valuable information needed for the optimizations.
     """
     def __init__(self, conf):
+        np.random.seed(conf.seed)
+        
         # Generate the graph
-        self.graph = gnp_random_connected_graph_weighted(conf.n_nodes, conf.probability, conf.min_weight, conf.max_weight)
+        self.graph = barabasi_albert_weighted_graph(seed=conf.seed, n=conf.n_nodes, m=conf.edges, maxw=conf.max_weight, minw=conf.min_weight)
+
+        # Betweenness centrality
+        btw_cnt = nx.betweenness_centrality(self.graph, seed=conf.seed)
+        # https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
+        bc_sorted = sorted(btw_cnt.items(), reverse=True, key=lambda e: e[1])
+
         add_users(self.graph, conf.n_users, conf.min_weight, conf.max_weight)
 
-        # Generate the management data for the servers
+        # Memory for each node
+        memory = sorted([
+                random.choice(conf.node_memory_choice)
+                    for i in range(conf.n_nodes)
+                    ], reverse=True)
+
+        it = iter(memory)
+
+        # Assign memory to nodes depending on centrality
         self.nodes = [
                 Node(
-                    memory = random.choice(conf.node_memory_choice),
                     max_tasks = random.choice(conf.node_max_tasks_choice)
                 ) for _ in range(conf.n_nodes)]
+
+        # Assign memory to each node depending on its centrality giving more
+        # memory to the nodes that have more betweenness centrality
+        for i, _ in bc_sorted:
+            self.nodes[i].memory = memory[i]
 
         # Generate the management data for the users
         self.users = [User() for _ in range(conf.n_users)]
@@ -42,15 +62,13 @@ class Network:
         # Generate the user access to each service. A user can access many
         # services and a service can be accessed by many users, so the resulting
         # datastructure is a set of pairs of tasks/users.
-        self.task_user = []
-        for t in range(conf.n_tasks):
-            self.task_user += random.sample(
-                [(t,u)
-                    for u in range(conf.n_users)
-                ],
-                random.randrange(1, conf.n_users)
-                # Ensure that each service is requested by at least one user
-            )
+        tu_matrix = np.random.choice([0,1], (conf.n_tasks, conf.n_users))
+        while not np.all(np.any(tu_matrix, 0)) or not np.all(np.any(tu_matrix, 1)):
+            tu_matrix = np.random.choice([0,1], (conf.n_tasks, conf.n_users))
+            # Ensure that each user requests at least one task and each tasks is
+            # requested by at least one user.
+
+        self.task_user = np.transpose(np.nonzero(tu_matrix))
 
     def displayGraph(self):
         """

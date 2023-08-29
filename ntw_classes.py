@@ -9,7 +9,7 @@ class Node:
 
     # Attributes
     id: int = field(init=False)
-    memory: float
+    memory: float = field(init=False)
     max_tasks: int
     #tasks: List[int] = field(init=False, default_factory=list)
 
