@@ -7,6 +7,7 @@ from pymoo.core.callback  import Callback
 
 import numpy as np
 import random
+import datetime
 
 """
 Service instantiated on a single node
@@ -118,9 +119,32 @@ class MyDuplicateElimination(ElementwiseDuplicateElimination):
         return np.array_equal(a.X[0], b.X[0])
 
 class MyCallback(Callback):
+    def __init__(self, save_history=False):
+        super().__init__()
+        self.save_history = save_history
+        if save_history:
+            self.string_history = ""
+        else:
+            self.string_solution = ""
 
     def notify(self, algorithm):
         f = algorithm.pop.get('F_original')
+
+        # Save current solution or append to history
+        curr_sol = algorithm.opt.get('F_original')
+
+        if self.save_history:
+            dt_now = datetime.datetime.now()
+        else:
+            self.string_solution = ""
+
+        for o1, o2 in curr_sol:
+            if self.save_history:
+                self.string_history += "{} {} {} {}\n".format(
+                        dt_now, algorithm.n_gen, o1, o2)
+            else:
+                self.string_solution += "{} {}\n".format(o1, o2)
+
 
         # Values needed for normalization
         algorithm.f1_min = f[:, 0].min()

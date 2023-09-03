@@ -25,7 +25,6 @@ parser.add_argument('--seed', type=int, default=SEED, help='Seed used for random
 # Network generation
 parser_generate = subparsers.add_parser('generate', help='Generate the network')
 
-parser_generate.add_argument('-p', '--probability', type=float, choices=[Range(0.0, 1.0)], default=P, help='Probability of a node being connected to another node. Mind that there\'s at least one edge on each node to enforce the graph being connected, so this value will be meaningful if the probability is greater than 1/NODES. Conflicts with --edges.')
 parser_generate.add_argument('-e', '--edges', type=int, default=E, help='Number of edges to attach from a new node to existing nodes. Conflicts with --probability.')
 parser_generate.add_argument('--min_weight', type=float, default=MIN_WEIGHT, help='Minimum weight that an edge can have')
 parser_generate.add_argument('--max_weight', type=float, default=MAX_WEIGHT, help='Maximum weight that an edge can have')
@@ -37,6 +36,8 @@ parser_generate.add_argument('--task_min_memory', type=float, default=TASK_MIN_M
 parser_generate.add_argument('--task_max_memory', type=float, default=TASK_MAX_MEMORY, help='Maximum memory that a task requires to execute')
 
 parser_generate.add_argument('--n_users', type=int, default=N_USERS, help='Number of users in the network')
+
+parser_generate.add_argument('-p', '--probability', type=float, choices=[Range(0.0, 1.0)], default=P, help='Probability of a user requesting a service.')
 
 parser_generate.add_argument('--paint', action='store_true', help='Paint the graph with Matplotlib')
 parser_generate.add_argument('--print', action='store_true', help='Print on console useful information about the generated network')
@@ -60,6 +61,9 @@ parser_solve.add_argument('--print', action='store_true', help='Print on console
 
 parser_solve.add_argument('-o', '--output', type=argparse.FileType('w'), help='Output file path used for storing the solution data')
 parser_solve.add_argument('--save_history', action='store_true', help='Will save history to retrieve the evolution of the solutions')
+
+parser_solve.add_argument('--single_mode', action='store_true', help='Will force the algorithm to use single mode optimization')
+parser_solve.add_argument('-l', '--lmb', type=float, choices=[Range(0.0, 1.0)], default=LAMBDA, help='Parameter used for weighted average when converting bimode to single-mode.')
 
 # Specific parameter for algorithms that need reference directions
 parser_solve.add_argument('--n_partitions', type=int, default=N_PARTITIONS, help='Specific parameter for algorithm NSGA3. Set the number of partitions for reference directions.')

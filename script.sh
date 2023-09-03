@@ -2,9 +2,9 @@
 
 SEED=727
 
-NODES=100
-TASKS=50
-USERS=10
+NODES=1000
+TASKS=200
+USERS=50
 
 POP_SIZE=100
 N_GEN=100
@@ -14,16 +14,25 @@ N_PARTITIONS=16
 
 #python3 main.py --seed $SEED generate -p 0.15 \
 #	--n_nodes $NODES --n_tasks $TASKS --n_users $USERS \
-#	-o "data/network/ntw_"$SEED"_"$NODES"_"$TASKS"_"$USERS
+#	-o "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS
 
-#for ALGORITHM in 'RNSGA2'; do
-#	for SEED2 in 5; do
+#for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
+#	echo "$ALGORITHM"
+#	for SEED2 in {1..5}; do
+#		echo "  Execution $SEED2"
 #		python3 main.py --seed $SEED2 solve \
-#			-i "data/network/ntw_"$SEED"_"$NODES"_"$TASKS"_"$USERS \
-#			--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB -v --save_history \
+#			-i "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS \
+#			--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB --save_history \
 #			--algorithm $ALGORITHM \
-#			-o "data/solutions/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN
+#			-o "data/solutions/$NODES:$TASKS:$USERS/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN &
+#
+#		pids[${SEED2}]=$!
 #	done
+#
+#	for pid in ${pids[*]}; do
+#		wait $pid
+#	done
+#	echo "DONE"
 #done
 
 # TODO: Monitorizar el tiempo de ejecución, para tener métricas más rigurosas para hacer un estudio
@@ -31,7 +40,7 @@ N_PARTITIONS=16
 #for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
 #	for SEED2 in {1..5}; do
 #		python3 main.py --seed $SEED plot \
-#			-i "data/solutions/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN \
+#			-i "data/solutions/$NODES:$TASKS:$USERS/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
 #			--history \
 #			--title "Objective space - Convergence ($ALGORITHM)" \
 #			--x_label "Mean latency between users/services" \
@@ -41,12 +50,12 @@ N_PARTITIONS=16
 
 for SEED2 in {1..5}; do
 	python3 main.py --seed $SEED plot \
-		-i "data/solutions/NSGA2_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN \
-		   "data/solutions/NSGA3_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN \
-		   "data/solutions/UNSGA3_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN \
-		   "data/solutions/CTAEA_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN \
-		   "data/solutions/SMSEMOA_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN \
-		   "data/solutions/RVEA_"$SEED":"$SEED2"_"$NODES"_"$TASKS"_"$USERS"_"$N_GEN \
+		-i "data/solutions/$NODES:$TASKS:$USERS/NSGA2_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+		   "data/solutions/$NODES:$TASKS:$USERS/NSGA3_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+		   "data/solutions/$NODES:$TASKS:$USERS/UNSGA3_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+		   "data/solutions/$NODES:$TASKS:$USERS/CTAEA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+		   "data/solutions/$NODES:$TASKS:$USERS/SMSEMOA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+		   "data/solutions/$NODES:$TASKS:$USERS/RVEA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
 		--comparison \
 		--legend NSGA2 \
 			 NSGA3 \

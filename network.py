@@ -62,13 +62,116 @@ class Network:
         # Generate the user access to each service. A user can access many
         # services and a service can be accessed by many users, so the resulting
         # datastructure is a set of pairs of tasks/users.
-        tu_matrix = np.random.choice([0,1], (conf.n_tasks, conf.n_users))
+        tu_matrix = self._generateTaskUserAssignmentMatrix_v2(p=conf.probability)
+        self.task_user = np.transpose(np.nonzero(tu_matrix))
+
+    def _generateTaskUserAssignmentMatrix_v1(self):
+        """
+        Old method: this randomly generates the matrix with 0.5 probability
+        for each matrix cell to be 0 or 1 and retries until every service is
+        requested by at least one user and every user requests at least one
+        service. Less efficient than the second version.
+        """
+        tu_matrix = np.random.choice([0,1], (len(self.tasks), len(self.users)))
         while not np.all(np.any(tu_matrix, 0)) or not np.all(np.any(tu_matrix, 1)):
-            tu_matrix = np.random.choice([0,1], (conf.n_tasks, conf.n_users))
+            tu_matrix = np.random.choice([0,1], (len(self.tasks), len(self.users)))
             # Ensure that each user requests at least one task and each tasks is
             # requested by at least one user.
+        return tu_matrix
 
-        self.task_user = np.transpose(np.nonzero(tu_matrix))
+    def _generateTaskUserAssignmentMatrix_v2(self, p=0.5):
+        """
+        DESCRIPTION OF THE PROCESS:
+            1. Generate the Eye matrix (n×m):
+
+                1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 1 0
+                0 0 0 0 1
+                0 0 0 0 0
+                0 0 0 0 0
+                0 0 0 0 0
+
+            2. If rows > cols, then place a random one each row (after the
+                square submatrix), else if cols > rows, do same on each column:
+
+                1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0    Identity submatrix
+                0 0 0 1 0
+                0 0 0 0 1
+                --------------------------------------------
+                0 0 0 0 1
+                1 0 0 0 0    Extra rows (or cols if m > n)
+                0 1 0 0 0 
+
+                - Notice: number of ones is equal to n
+
+            3. Shuffle rows (shuffle cols if m > n)
+                
+                0 1 0 0 0
+                0 0 0 0 1
+                0 1 0 0 0
+                1 0 0 0 0
+                0 0 0 1 0
+                0 0 0 0 1
+                1 0 0 0 0
+                0 0 1 0 0
+
+            4. Add extra ones. Requires to calculate a new probability based
+                on the amount of ones that are already placed.
+
+                - Let p   := probability that an user requests a service
+                - Let p_c := new probability given that n services are already
+                             assigned (or m if m > n)
+                - Let a   := remaining assignments needed
+
+                If we treat p as the proportion of ones, we have:
+
+                    n*m*p = n + a
+                    n*m*p - n = a
+                    n(m*p - 1) = a
+
+                Then, we iterate over the zeros of the matrix and assign ones
+                given the following probability:
+
+                    p_c = a/(n*m - n) = n(m*p - 1) / n(m-1) = (m*p-1)/(m-1)
+
+                If m > n, we change m for n
+
+        """
+        # Eye matrix
+        n, m = len(self.tasks), len(self.users)
+        tu_matrix = np.eye(n, m, dtype=np.uint8)
+
+        if n >= m:
+            # Set ones randomly remaining rows
+            for i in range(m, n):
+                tu_matrix[i, random.randrange(m)] = 1
+
+            # Shuffle rows
+            np.random.shuffle(tu_matrix)
+            p_c = (m*p-1)/(m-1)
+
+        else:
+            # Set ones randomly remaining columns
+            for i in range(n, m):
+                tu_matrix[random.randrange(n), i] = 1
+
+            # Shuffle columns
+            np.random.shuffle(tu_matrix.T)
+            p_c = (n*p-1)/(n-1)
+
+        # Set remaining ones randomly according to new probability
+        if p_c > 0.:
+            for i in range(n):
+                for j in range(m):
+                    if tu_matrix[i,j] == 0 and random.random() < p_c:
+                        tu_matrix[i,j] = 1
+
+        return tu_matrix
+
 
     def displayGraph(self):
         """
@@ -389,5 +492,13 @@ if __name__ == '__main__':
     print(occupied)
     print()
     print(ntw.getNodeAvailableMemoryArray(matrix))
+    print()
+
+    print('=====================================')
+    print('Testing task/user assignment function')
+    print('=====================================')
+    print()
+
+    print(ntw._generateTaskUserAssignmentMatrix_v2())
 
 

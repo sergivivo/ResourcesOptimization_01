@@ -5,6 +5,7 @@ from plot import plot_convergence, plot_scatter_legend
 
 import random
 import numpy as np
+import sys
 
 def print_info(ntw):
 
@@ -110,18 +111,15 @@ if __name__ == "__main__":
         import pickle
         ntw = pickle.load(configs.input)
 
-        if configs.output:
-            solutions = solve(ntw, configs)
-            if configs.save_history:
-                # Three parameters, including generation
-                for i in range(configs.n_gen):
-                    for o1, o2 in solutions[i]:
-                        configs.output.write('{} {} {}\n'.format(i+1, o1, o2))
-            else:
-                # Two parameters, last generation
-                for o1, o2 in solutions:
-                    configs.output.write('{} {}\n'.format(o1, o2))
+        solution = solve(ntw, configs)
+        if not solution:
+            sys.exit(1)
 
+        if configs.print:
+            print(solution)
+
+        if configs.output:
+            configs.output.write(solution)
             configs.output.close()
     
     elif configs.command == 'plot':

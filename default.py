@@ -2,7 +2,6 @@
 SEED = 727
 
 # Network generation
-P = 0.15
 E = 2
 MIN_WEIGHT = 5.
 MAX_WEIGHT = 20.
@@ -16,6 +15,7 @@ TASK_MIN_MEMORY = 30
 TASK_MAX_MEMORY = 800
 
 N_USERS = 3
+P = 0.3
 
 OUTPUT_FILE = 'graph01.gefx'
 
@@ -30,6 +30,8 @@ MUTATION_PROB = 0.1
 N_PARTITIONS = 16
 REF_POINTS = '[[18., 6.], [15., 8.], [21., 5.]]'
 
+LAMBDA = 0.5 # used for converting bimode to single-mode
+
 
 ALGORITHMS = [
         'NSGA2',
@@ -37,7 +39,6 @@ ALGORITHMS = [
         'NSGA3',
         'UNSGA3',
         'RNSGA3',
-        'MOEAD',
         'AGEMOEA',
         'CTAEA',
         'SMSEMOA',
