@@ -453,52 +453,55 @@ if __name__ == '__main__':
 
     ntw = Network(configs)
 
-    matrix = np.zeros((configs.n_tasks, configs.n_nodes), np.uint8)
-    for row in range(configs.n_tasks):
-        col = random.randrange(configs.n_nodes)
-        matrix[row, col] = 1
+    print(ntw.getTaskMemoryArray())
+    print(ntw.getNodeMemoryArray())
 
-    tuam = ntw.getTaskUserAssignmentMatrix()
-    tudm = ntw.getTaskUserDistanceMatrix(matrix, includeAll=False)
+    #matrix = np.zeros((configs.n_tasks, configs.n_nodes), np.uint8)
+    #for row in range(configs.n_tasks):
+    #    col = random.randrange(configs.n_nodes)
+    #    matrix[row, col] = 1
 
-    tua_sum = np.sum(tudm, axis=1) 
-    tud_sum = np.sum(tuam, axis=1)
-    tu_filter = (tua_sum != 0) # Filter so that there's no division by zero
+    #tuam = ntw.getTaskUserAssignmentMatrix()
+    #tudm = ntw.getTaskUserDistanceMatrix(matrix, includeAll=False)
+
+    #tua_sum = np.sum(tudm, axis=1) 
+    #tud_sum = np.sum(tuam, axis=1)
+    #tu_filter = (tua_sum != 0) # Filter so that there's no division by zero
 
 
-    print(tuam)
-    print(tudm)
-    print()
+    #print(tuam)
+    #print(tudm)
+    #print()
 
-    print(tua_sum)
-    print(tud_sum)
-    print()
+    #print(tua_sum)
+    #print(tud_sum)
+    #print()
 
-    print(tua_sum[tu_filter])
-    print(tud_sum[tu_filter])
-    print()
+    #print(tua_sum[tu_filter])
+    #print(tud_sum[tu_filter])
+    #print()
 
-    avg_row = tua_sum[tu_filter] / tud_sum[tu_filter]
+    #avg_row = tua_sum[tu_filter] / tud_sum[tu_filter]
 
-    print(avg_row)
-    print()
-    
-    print(np.average(avg_row))
-    print()
+    #print(avg_row)
+    #print()
+    #
+    #print(np.average(avg_row))
+    #print()
 
-    capacity = ntw.getNodeMemoryArray()
-    occupied = ntw.getNodeOccupiedMemoryArray(matrix)
-    print(capacity)
-    print(occupied)
-    print()
-    print(ntw.getNodeAvailableMemoryArray(matrix))
-    print()
+    #capacity = ntw.getNodeMemoryArray()
+    #occupied = ntw.getNodeOccupiedMemoryArray(matrix)
+    #print(capacity)
+    #print(occupied)
+    #print()
+    #print(ntw.getNodeAvailableMemoryArray(matrix))
+    #print()
 
-    print('=====================================')
-    print('Testing task/user assignment function')
-    print('=====================================')
-    print()
+    #print('=====================================')
+    #print('Testing task/user assignment function')
+    #print('=====================================')
+    #print()
 
-    print(ntw._generateTaskUserAssignmentMatrix_v2())
+    #print(ntw._generateTaskUserAssignmentMatrix_v2())
 
 

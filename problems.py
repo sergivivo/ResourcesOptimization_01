@@ -162,10 +162,11 @@ class Problem01v3(ElementwiseProblem):
         self.multimode = multimode
         self.l = l # lambda for converting bidimensional to single
 
+        # Values needed for normalization
         self.f1_min = 0.
-        self.f1_max = 1000.
+        self.f1_max = np.max(network.getUserNodeDistanceMatrix())
         self.f2_min = 0.
-        self.f2_max = 1000.
+        self.f2_max = self.N_NODES
 
         super().__init__(
                 n_var = 1,
@@ -174,13 +175,9 @@ class Problem01v3(ElementwiseProblem):
 
 
     def _evaluate(self, x, out, *args, **kwargs):
-        # En cada generación, guardar el máximo y el mínimo f1 y f2
-        # https://pymoo.org/interface/callback.html
-        # TODO: hacer unas ejecuciones, ver cuál es el posible mayor y menor valor que se pueda
-        #       obtener en la solución, requiere de una ejecución previa, pasar por argumento
         matrix = x[0]
 
-        f1 = self.network.getTasksAverageDistanceToUser(matrix)
+        f1 = self.network.getTasksAverageDistanceToUser(matrix) 
         f2 = np.count_nonzero(np.max(matrix, axis=0))
 
         assigned_memory_v = np.sum(self.network.getTaskNodeMemoryMatrix(matrix), axis=0)
@@ -204,7 +201,7 @@ class Problem01v3(ElementwiseProblem):
 
 
 
-
+# Testing
 def solveAndAddToPlot(problem, algorithm, termination, name, color):
     res = minimize(
         problem,

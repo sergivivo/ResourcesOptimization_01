@@ -146,17 +146,5 @@ class MyCallback(Callback):
                 self.string_solution += "{} {}\n".format(o1, o2)
 
 
-        # Values needed for normalization
-        algorithm.f1_min = f[:, 0].min()
-        algorithm.f1_max = f[:, 0].max()
-        algorithm.f2_min = f[:, 1].min()
-        algorithm.f2_max = f[:, 1].max()
-
-
-
-
-
-
-
 
 
