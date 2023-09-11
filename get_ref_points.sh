@@ -10,13 +10,13 @@ USERS=10
 POP_SIZE=100
 N_GEN=100
 MUTATION_PROB=0.2
-ALGORITHM='NSGA3'
+ALGORITHM='ILP'
 
 N_REF_POINTS=16
 N_PARTITIONS=$((N_REF_POINTS+1))
 
 # Generate $N_REF_POINTS Lambda values between [0,1]
-LAMBDA_LIST=$(python3 -c "for i in range(1,$N_REF_POINTS+1): print(i/($N_REF_POINTS+1))")
+LAMBDA_LIST=$(python3 -c "for i in range(1,$N_REF_POINTS-9): print(i/($N_REF_POINTS+1))")
 
 i=1
 for l in $LAMBDA_LIST; do
@@ -27,7 +27,7 @@ for l in $LAMBDA_LIST; do
 		-i "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS \
 		--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB \
 		--algorithm $ALGORITHM --n_partitions $N_PARTITIONS --single_mode --lmb $l \
-		--print > "/tmp/ref_$i" &
+		--output "/tmp/ref_$i" &
 
 	pids[${i}]=$!
 	i=$((i+1))
@@ -43,5 +43,5 @@ for i in $(seq 1 $N_REF_POINTS); do
 	array+="$(cat "/tmp/ref_$i" | grep . | awk '{print "[" $1 "," $2 "]"}')"
 done
 
-echo "[${array[*]//][/],[}]" > "data/solutions/$NODES:$TASKS:$USERS/ref_points/rp_"$ALGORITHM"_"$SEED":"$SEED2"_2"
+echo "[${array[*]//][/],[}]" > "data/solutions/$NODES:$TASKS:$USERS/ref_points/rp_"$ALGORITHM"_"$SEED":"$SEED2
 

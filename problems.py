@@ -162,11 +162,17 @@ class Problem01v3(ElementwiseProblem):
         self.multimode = multimode
         self.l = l # lambda for converting bidimensional to single
 
+        # Save for efficiency purposes
+        self.undm = network.getUserNodeDistanceMatrix()
+        self.tuam = network.getTaskUserAssignmentMatrix()
+
         # Values needed for normalization
-        self.f1_min = 0.
-        self.f1_max = np.max(network.getUserNodeDistanceMatrix())
-        self.f2_min = 0.
+        self.f1_min = network.getTasksMinAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
+        self.f1_max = network.getTasksMaxAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
+        self.f2_min = network.getMinimumNNodesNeeded()
         self.f2_max = self.N_NODES
+
+        #np.getTaskAverageDistanceToUser()
 
         super().__init__(
                 n_var = 1,
@@ -177,7 +183,8 @@ class Problem01v3(ElementwiseProblem):
     def _evaluate(self, x, out, *args, **kwargs):
         matrix = x[0]
 
-        f1 = self.network.getTasksAverageDistanceToUser(matrix) 
+        f1 = self.network.getTasksAverageDistanceToUser(
+                matrix, tuam=self.tuam, undm=self.undm) 
         f2 = np.count_nonzero(np.max(matrix, axis=0))
 
         assigned_memory_v = np.sum(self.network.getTaskNodeMemoryMatrix(matrix), axis=0)
@@ -186,13 +193,13 @@ class Problem01v3(ElementwiseProblem):
         # Dicho de otro modo, al restar la memoria ocupada con la capacidad,
         # debe ser menor o igual a cero
 
+        f1_norm = (f1 - self.f1_min) / (self.f1_max - self.f1_min)
+        f2_norm = (f2 - self.f2_min) / (self.f2_max - self.f2_min)
+        
         if self.multimode:
-            out['F'] = [f1, f2]
+            out['F'] = [f1_norm, f2_norm]
             out['F_original'] = [f1, f2]
         else:
-            f1_norm = (f1 - self.f1_min) / (self.f1_max - self.f1_min)
-            f2_norm = (f2 - self.f2_min) / (self.f2_max - self.f2_min)
-            
             out['F'] = [self.l * f1_norm + (1 - self.l) * f2_norm]
             out['F_original'] = [f1, f2]
 

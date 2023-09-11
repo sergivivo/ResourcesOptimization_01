@@ -42,5 +42,6 @@ ALGORITHMS = [
         'AGEMOEA',
         'CTAEA',
         'SMSEMOA',
-        'RVEA']
+        'RVEA',
+        'ILP']
 

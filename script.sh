@@ -2,9 +2,9 @@
 
 SEED=727
 
-NODES=1000
-TASKS=200
-USERS=50
+NODES=20
+TASKS=40
+USERS=5
 
 POP_SIZE=100
 N_GEN=100
@@ -12,9 +12,9 @@ MUTATION_PROB=0.2
 ALGORITHM='RNSGA2'
 N_PARTITIONS=16
 
-#python3 main.py --seed $SEED generate -p 0.15 \
-#	--n_nodes $NODES --n_tasks $TASKS --n_users $USERS \
-#	-o "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS
+python3 main.py --seed $SEED generate \
+	--n_nodes $NODES --n_tasks $TASKS --n_users $USERS \
+	-o "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS
 
 #for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
 #	echo "$ALGORITHM"
@@ -48,25 +48,25 @@ N_PARTITIONS=16
 #	done
 #done
 
-for SEED2 in {1..5}; do
-	python3 main.py --seed $SEED plot \
-		-i "data/solutions/$NODES:$TASKS:$USERS/NSGA2_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
-		   "data/solutions/$NODES:$TASKS:$USERS/NSGA3_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
-		   "data/solutions/$NODES:$TASKS:$USERS/UNSGA3_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
-		   "data/solutions/$NODES:$TASKS:$USERS/CTAEA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
-		   "data/solutions/$NODES:$TASKS:$USERS/SMSEMOA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
-		   "data/solutions/$NODES:$TASKS:$USERS/RVEA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
-		--comparison \
-		--legend NSGA2 \
-			 NSGA3 \
-			 UNSGA3 \
-			 CTAEA \
-			 SMSEMOA \
-			 RVEA \
-		--title "Objective space - Comparison between algorithms" \
-		--x_label "Mean latency between users/services" \
-		--y_label "Occupied nodes"
-done
+#for SEED2 in {1..5}; do
+#	python3 main.py --seed $SEED plot \
+#		-i "data/solutions/$NODES:$TASKS:$USERS/NSGA2_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+#		   "data/solutions/$NODES:$TASKS:$USERS/NSGA3_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+#		   "data/solutions/$NODES:$TASKS:$USERS/UNSGA3_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+#		   "data/solutions/$NODES:$TASKS:$USERS/CTAEA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+#		   "data/solutions/$NODES:$TASKS:$USERS/SMSEMOA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+#		   "data/solutions/$NODES:$TASKS:$USERS/RVEA_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN \
+#		--comparison \
+#		--legend NSGA2 \
+#			 NSGA3 \
+#			 UNSGA3 \
+#			 CTAEA \
+#			 SMSEMOA \
+#			 RVEA \
+#		--title "Objective space - Comparison between algorithms" \
+#		--x_label "Mean latency between users/services" \
+#		--y_label "Occupied nodes"
+#done
 
 
 

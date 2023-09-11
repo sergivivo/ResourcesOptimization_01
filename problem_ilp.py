@@ -5,7 +5,7 @@ import random
 
 class ProblemILP():
 
-    def __init__(self, network, l=0.0):
+    def __init__(self, network, l=0.5, verbose=False):
         self.network = network
 
         # Define the constants
@@ -16,12 +16,17 @@ class ProblemILP():
         self.TASK_MEM_ARRAY = network.getTaskMemoryArray()
         self.NODE_MEM_ARRAY = network.getNodeMemoryArray()
 
+        self.undm = network.getUserNodeDistanceMatrix()
+        self.tuam = network.getTaskUserAssignmentMatrix()
+
         self.l = l # lambda for converting bimode to singlemode
 
+        self.verbose = verbose
+
         # Values needed for normalization
-        self.f1_min = 0.
-        self.f1_max = np.max(network.getUserNodeDistanceMatrix())
-        self.f2_min = 0.
+        self.f1_min = network.getTasksMinAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
+        self.f1_max = network.getTasksMaxAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
+        self.f2_min = network.getMinimumNNodesNeeded()
         self.f2_max = self.N_NODES
 
         # Defining the problem
@@ -43,6 +48,8 @@ class ProblemILP():
         self._setObjectiveFunction()
 
         # Constraints
+        self.prob += self._getObjectiveExpression(1) >= self.f2_min
+
         for t in range(self.N_TASKS):
             self.prob += pulp.lpSum(self.tnam[t]) == 1
             # Ensure each service is assigned to a single node
@@ -60,15 +67,89 @@ class ProblemILP():
             # Ensure that node's memory limit is not surpassed
 
     def _setObjectiveFunction(self):
-        self.prob += pulp.lpSum(self.n_sel), "Number of nodes with at least one task"
+        #self.prob += self._getObjectiveExpression(0), "Services' average distance to user"
+        #self.prob += self._getObjectiveExpression(1), "Number of nodes with at least one task"
+        self.prob += \
+                self.l       * self._getObjectiveExpressionNormalized(0) + \
+                (1 - self.l) * self._getObjectiveExpressionNormalized(1),  \
+                "Bi-mode to single-mode execution using lambda"
 
     def _normalize(self, f1, f2):
         f1_norm = (f1 - self.f1_min) / (self.f1_max - self.f1_min)
         f2_norm = (f2 - self.f2_min) / (self.f2_max - self.f2_min)
         return f1_norm, f2_norm
 
+    def _getTaskAssignedId(self):
+        """
+        Only works for single-node service assignment.
+
+        Given a tnam:
+            x11 x12 x13
+            x21 x22 x23
+            x31 x32 x33
+
+        Our node selection vector can be retrieved this way:
+            0*x11 + 1*x12 + 2*x13
+            0*x21 + 1*x22 + 2*x23
+            0*x31 + 1*x32 + 2*x33
+
+        Since xij is either 1 or 0 and tasks can only be assigned to a single
+        node, we can treat these variables as selection variables, multiplying
+        by unit increasing coefficients representing node ids.
+        """
+
+        exp_list = []
+        for t in range(self.N_TASKS):
+            exp_list.append(
+                    pulp.lpSum([
+                            n * self.tnam[t][n] 
+                            for n in range(self.N_NODES)
+                        ])
+                )
+        return exp_list
+
+    def _getTaskUserDistanceMatrix(self):
+        tudm = np.empty((self.N_TASKS, self.N_USERS), dtype=object)
+        for t in range(self.N_TASKS):
+            for u in range(self.N_USERS):
+                tudm[t][u] = pulp.LpAffineExpression()
+                for n in range(self.N_NODES):
+                    tudm[t][u] += self.tnam[t][n] * self.undm[u][n]
+                    # Assuming that the service is assigned to a single node
+                    # Else, instead of adding, it should get the max value
+        return tudm
+    
+    def _getTasksAverageDistanceToUser(self, tudm):
+        tud_avg = pulp.LpAffineExpression()
+
+        tua_sum = np.sum(self.tuam, axis=1)
+        for t in range(self.N_TASKS):
+            tud_avg += pulp.lpSum([
+                    self.tuam[t][u] * tudm[t][u] / tua_sum[t]
+                    for u in range(self.N_USERS)
+                ])
+
+        tud_avg /= self.N_TASKS
+
+        return tud_avg
+    
+    def _getObjectiveExpression(self, obj_n):
+        if   obj_n == 0:
+            return self._getTasksAverageDistanceToUser(
+                    self._getTaskUserDistanceMatrix()
+                )
+        elif obj_n == 1:
+            return pulp.lpSum(self.n_sel)
+
+    def _getObjectiveExpressionNormalized(self, obj_n):
+        f = self._getObjectiveExpression(obj_n)
+        if   obj_n == 0:
+            return (f - self.f1_min) / (self.f1_max - self.f1_min)
+        elif obj_n == 1:
+            return (f - self.f2_min) / (self.f2_max - self.f2_min)
+
     def solve(self):
-        self.prob.solve()
+        self.prob.solve(pulp.PULP_CBC_CMD(msg=1 if self.verbose else 0))
         return pulp.LpStatus[self.prob.status]
     
     def getSolutionString(self):
@@ -83,8 +164,8 @@ class ProblemILP():
     def getSingleModeObjective(self):
         return pulp.value(self.prob.objective)
 
-    def getMultiModeObjective(self, i):
-        pass
+    def getObjective(self, obj_n):
+        return pulp.value(self._getObjectiveExpression(obj_n))
 
     def changeLambda(self, l):
         self.l = l
@@ -98,8 +179,7 @@ if __name__ == '__main__':
     random.seed(configs.seed)
     ntw = pickle.load(configs.input)
 
-    problem = ProblemILP(ntw)
+    problem = ProblemILP(ntw, l=configs.lmb)
 
     problem.solve()
-    print(problem.getSolutionString())
 

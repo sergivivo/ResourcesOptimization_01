@@ -1,5 +1,6 @@
 from problems import Problem01v3
 from problem_tools import MySampling, MyCrossover, MyRepair, MyMutation, MyDuplicateElimination, MyCallback
+from problem_ilp import ProblemILP
 
 from pymoo.algorithms.moo.nsga2  import NSGA2
 from pymoo.algorithms.moo.rnsga2 import RNSGA2
@@ -35,86 +36,24 @@ algdict = {
 
 def solve(ntw, configs):
 
-    if configs.algorithm in ('NSGA2', 'RNSGA2'):
-        print("ERROR: Chosen algorithm does not support single-mode execution.")
-        return None
+    if configs.algorithm == 'ILP':
+        problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose)
 
-    problem = Problem01v3(ntw, multimode=not configs.single_mode, l=configs.lmb)
-    termination = get_termination(configs.termination_type, configs.n_gen)
-
-    if configs.algorithm == 'NSGA2':
-        algorithm = NSGA2(
-                pop_size = configs.pop_size,
-                sampling = MySampling(),
-                crossover = MyCrossover(),
-                mutation = MyMutation(configs.mutation_prob),
-                repair = MyRepair(),
-                callback = MyCallback(save_history=configs.save_history),
-                eliminate_duplicates = MyDuplicateElimination()
-            )
-
-    elif configs.algorithm == 'SMSEMOA':
-        algorithm = SMSEMOA(
-                sampling=MySampling(),
-                crossover=MyCrossover(),
-                mutation=MyMutation(configs.mutation_prob),
-                repair=MyRepair(),
-                callback = MyCallback(save_history=configs.save_history),
-                eliminate_duplicates=MyDuplicateElimination()
-            )
-
-    elif configs.algorithm in ('RNSGA2', 'RNSGA3'):
-        # Algorithms that use reference points
-        ref_points = np.array(configs.ref_points)
-
-        if configs.algorithm == 'RNSGA2':
-            algorithm = RNSGA2(
-                    pop_size = configs.pop_size,
-                    ref_points = ref_points,
-                    sampling = MySampling(),
-                    crossover = MyCrossover(),
-                    mutation = MyMutation(configs.mutation_prob),
-                    repair = MyRepair(),
-                    callback = MyCallback(save_history=configs.save_history),
-                    eliminate_duplicates = MyDuplicateElimination()
-                )
-        else:
-            algorithm = RNSGA3(
-                    pop_per_ref_point = configs.pop_size // ref_points.size,
-                    ref_points = ref_points,
-                    sampling = MySampling(),
-                    crossover = MyCrossover(),
-                    mutation = MyMutation(configs.mutation_prob),
-                    repair = MyRepair(),
-                    callback = MyCallback(save_history=configs.save_history),
-                    eliminate_duplicates = MyDuplicateElimination()
-                )
-            
+        problem.solve()
+        return "{} {}".format(problem.getObjective(0), problem.getObjective(1))
 
     else:
-        # Algorithms that use reference directions
-        ref_dirs = get_reference_directions(
-                'das-dennis',
-                1 if configs.single_mode else 2,
-                n_partitions=configs.n_partitions
-            )
 
-        if configs.algorithm in ('CTAEA', 'RVEA'):
-            # Algorithms without population size
-            algorithm = algdict[configs.algorithm] (
-                    ref_dirs = ref_dirs,
-                    sampling = MySampling(),
-                    crossover = MyCrossover(),
-                    mutation = MyMutation(configs.mutation_prob),
-                    repair = MyRepair(),
-                    callback = MyCallback(save_history=configs.save_history),
-                    eliminate_duplicates = MyDuplicateElimination()
-                )
-        else:
-            # Algorithms with population size
-            algorithm = algdict[configs.algorithm] (
+        if configs.single_mode and configs.algorithm in ('NSGA2', 'RNSGA2'):
+            print("ERROR: Chosen algorithm does not support single-mode execution.")
+            return None
+
+        problem = Problem01v3(ntw, multimode=not configs.single_mode, l=configs.lmb)
+        termination = get_termination(configs.termination_type, configs.n_gen)
+
+        if configs.algorithm == 'NSGA2':
+            algorithm = NSGA2(
                     pop_size = configs.pop_size,
-                    ref_dirs = ref_dirs,
                     sampling = MySampling(),
                     crossover = MyCrossover(),
                     mutation = MyMutation(configs.mutation_prob),
@@ -123,16 +62,86 @@ def solve(ntw, configs):
                     eliminate_duplicates = MyDuplicateElimination()
                 )
 
-    res = minimize(
-        problem,
-        algorithm,
-        termination=termination,
-        seed=configs.seed,
-        verbose=configs.verbose
-    )
+        elif configs.algorithm == 'SMSEMOA':
+            algorithm = SMSEMOA(
+                    sampling=MySampling(),
+                    crossover=MyCrossover(),
+                    mutation=MyMutation(configs.mutation_prob),
+                    repair=MyRepair(),
+                    callback = MyCallback(save_history=configs.save_history),
+                    eliminate_duplicates=MyDuplicateElimination()
+                )
 
-    if configs.save_history:
-        return res.algorithm.callback.string_history
-    else:
-        return res.algorithm.callback.string_solution
+        elif configs.algorithm in ('RNSGA2', 'RNSGA3'):
+            # Algorithms that use reference points
+            ref_points = np.array(configs.ref_points)
+
+            if configs.algorithm == 'RNSGA2':
+                algorithm = RNSGA2(
+                        pop_size = configs.pop_size,
+                        ref_points = ref_points,
+                        sampling = MySampling(),
+                        crossover = MyCrossover(),
+                        mutation = MyMutation(configs.mutation_prob),
+                        repair = MyRepair(),
+                        callback = MyCallback(save_history=configs.save_history),
+                        eliminate_duplicates = MyDuplicateElimination()
+                    )
+            else:
+                algorithm = RNSGA3(
+                        pop_per_ref_point = configs.pop_size // ref_points.size,
+                        ref_points = ref_points,
+                        sampling = MySampling(),
+                        crossover = MyCrossover(),
+                        mutation = MyMutation(configs.mutation_prob),
+                        repair = MyRepair(),
+                        callback = MyCallback(save_history=configs.save_history),
+                        eliminate_duplicates = MyDuplicateElimination()
+                    )
+                
+
+        else:
+            # Algorithms that use reference directions
+            ref_dirs = get_reference_directions(
+                    'das-dennis',
+                    1 if configs.single_mode else 2,
+                    n_partitions=configs.n_partitions
+                )
+
+            if configs.algorithm in ('CTAEA', 'RVEA'):
+                # Algorithms without population size
+                algorithm = algdict[configs.algorithm] (
+                        ref_dirs = ref_dirs,
+                        sampling = MySampling(),
+                        crossover = MyCrossover(),
+                        mutation = MyMutation(configs.mutation_prob),
+                        repair = MyRepair(),
+                        callback = MyCallback(save_history=configs.save_history),
+                        eliminate_duplicates = MyDuplicateElimination()
+                    )
+            else:
+                # Algorithms with population size
+                algorithm = algdict[configs.algorithm] (
+                        pop_size = configs.pop_size,
+                        ref_dirs = ref_dirs,
+                        sampling = MySampling(),
+                        crossover = MyCrossover(),
+                        mutation = MyMutation(configs.mutation_prob),
+                        repair = MyRepair(),
+                        callback = MyCallback(save_history=configs.save_history),
+                        eliminate_duplicates = MyDuplicateElimination()
+                    )
+
+        res = minimize(
+            problem,
+            algorithm,
+            termination=termination,
+            seed=configs.seed,
+            verbose=configs.verbose
+        )
+
+        if configs.save_history:
+            return res.algorithm.callback.string_history
+        else:
+            return res.algorithm.callback.string_solution
 

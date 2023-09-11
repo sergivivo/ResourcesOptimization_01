@@ -29,14 +29,13 @@ class Network:
         add_users(self.graph, conf.n_users, conf.min_weight, conf.max_weight)
 
         # Memory for each node
-        memory = sorted([
+        self.memory = sorted([
                 random.choice(conf.node_memory_choice)
                     for i in range(conf.n_nodes)
                     ], reverse=True)
 
-        it = iter(memory)
+        it = iter(self.memory)
 
-        # Assign memory to nodes depending on centrality
         self.nodes = [
                 Node(
                     max_tasks = random.choice(conf.node_max_tasks_choice)
@@ -45,7 +44,7 @@ class Network:
         # Assign memory to each node depending on its centrality giving more
         # memory to the nodes that have more betweenness centrality
         for i, _ in bc_sorted:
-            self.nodes[i].memory = memory[i]
+            self.nodes[i].memory = self.memory[i]
 
         # Generate the management data for the users
         self.users = [User() for _ in range(conf.n_users)]
@@ -219,12 +218,41 @@ class Network:
     def getNTasks(self):
         return len(self.tasks)
 
-    def getTasksAverageDistanceToUser(self, matrix):
-        """Returns a float with the average distance of all services to
-        their respective users"""
+    def getMinimumNNodesNeeded(self):
+        """Calculates the hipotetical minimum number of nodes needed for
+        holding all the services. This method uses the sorted node memory array
+        and keeps adding node memory until the sum of the memory of all
+        services can be stored. Notice this is not necessarily true, as
+        services' required memory cannot be splited between nodes. Just useful
+        for calculating the normalized value of f2."""
 
-        tuam = self.getTaskUserAssignmentMatrix()
-        tudm = self.getTaskUserDistanceMatrix(matrix, includeAll=False)
+        total_task_mem = np.sum([t.memory for t in self.tasks])
+        total_node_mem = 0.
+        nodes_needed = 0
+        while total_node_mem <= total_task_mem and nodes_needed < len(self.nodes):
+            total_node_mem += self.memory[nodes_needed]
+            nodes_needed += 1
+
+        return nodes_needed
+
+    def getTasksAverageDistanceToUser(self, matrix, undm=None, tuam=None, maximize=False):
+        """
+        Returns a float with the average distance of all services to
+        their respective users.
+
+        Acronyms:
+        - tnam: task/node assignment matrix
+        - undm: user/node distance matrix
+        - tuam: task/user assignment matrix
+        - tudm: task/user distance matrix
+
+        Matrices tuam and undm can be passed by parameter for efficiency
+        purposes.
+        """
+
+        if tuam is None: tuam = self.getTaskUserAssignmentMatrix()
+        tudm = self.getTaskUserDistanceMatrix(
+                matrix, undm=undm, tuam=tuam, includeAll=False, maximize=maximize)
 
         tua_sum = np.sum(tudm, axis=1) 
         tud_sum = np.sum(tuam, axis=1)
@@ -232,7 +260,32 @@ class Network:
 
         avg_row = tua_sum[tu_filter] / tud_sum[tu_filter]
         return np.average(avg_row)
-    
+
+    def getTasksMinAverageDistanceToUser(self, undm=None, tuam=None):
+        """
+        Returns a float with the max possible average distance of all services
+        to their respective users. This is achieved by passing tnam as a full
+        matrix of ones, so it will traverse all nodes for each service getting
+        the minimum distance.
+
+        This method is useful for getting the normalized value of f1.
+        """
+        tnam = np.ones((len(self.tasks), len(self.nodes)), dtype=np.uint8)
+        return self.getTasksAverageDistanceToUser(
+                tnam, undm=undm, tuam=tuam)
+
+    def getTasksMaxAverageDistanceToUser(self, undm=None, tuam=None):
+        """
+        Returns a float with the max possible average distance of all services
+        to their respective users. This is achieved by passing tnam as a full
+        matrix of ones, so it will traverse all nodes for each service getting
+        the maximum distance.
+
+        This method is useful for getting the normalized value of f1.
+        """
+        tnam = np.ones((len(self.tasks), len(self.nodes)), dtype=np.uint8)
+        return self.getTasksAverageDistanceToUser(
+                tnam, undm=undm, tuam=tuam, maximize=True)
 
     # Dataclasses
     def getUser(self, user_id):
@@ -351,7 +404,7 @@ class Network:
                 distances[uid, nid] = dct[nid]
         return distances
     
-    def getTaskUserDistanceMatrix(self, tnam, includeAll = True):
+    def getTaskUserDistanceMatrix(self, tnam, undm=None, tuam=None, includeAll=True, maximize=False):
         """Get the distance matrix from the tasks (rows) to the users
         (columns) given a task/node assignment matrix
 
@@ -365,11 +418,17 @@ class Network:
         If set to false, each unassigned element will contain a zero. Useful
         for calculating averages by adding elements by columns or rows.
 
+        Parameter 'maximize', for multinode assignment, will take the node with
+        the requested service that is further away from the user instead of the
+        closer node. Useful for normalization.
+
+        Matrices undm and tuam can be passed by parameter for efficiency
+        purposes.
         """
 
-        undm = self.getUserNodeDistanceMatrix()
+        if undm is None: undm = self.getUserNodeDistanceMatrix()
 
-        if not includeAll:
+        if not includeAll and tuam is None:
             # In order to know which to inclue or exclude (m[row,col] == 1)
             tuam = self.getTaskUserAssignmentMatrix()
 
@@ -383,10 +442,16 @@ class Network:
                 tid = tn_nonzeros[0][i]
                 nid = tn_nonzeros[1][i]
                 if includeAll or tuam[tid, uid] == 1:
-                    if tudm[tid, uid] == 0:
+                    if not maximize:
+                        # Will take the minimum value
+                        if tudm[tid, uid] == 0:
+                            tudm[tid, uid] = undm[uid, nid]
+                        elif undm[uid, nid] < tudm[tid, uid]: 
+                            tudm[tid, uid] = undm[uid, nid]
+                    elif undm[uid, nid] > tudm[tid, uid]: 
+                        # Will take the maximum value
                         tudm[tid, uid] = undm[uid, nid]
-                    elif undm[uid, nid] < tudm[tid, uid]: 
-                        tudm[tid, uid] = undm[uid, nid]
+
 
         return tudm
 
@@ -453,8 +518,10 @@ if __name__ == '__main__':
 
     ntw = Network(configs)
 
-    print(ntw.getTaskMemoryArray())
-    print(ntw.getNodeMemoryArray())
+    print(ntw.getTaskUserAssignmentMatrix())
+    print(ntw.getUserNodeDistanceMatrix())
+    print(ntw.getTasksMinAverageDistanceToUser())
+    print(ntw.getTasksMaxAverageDistanceToUser())
 
     #matrix = np.zeros((configs.n_tasks, configs.n_nodes), np.uint8)
     #for row in range(configs.n_tasks):
