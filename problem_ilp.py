@@ -61,10 +61,17 @@ class ProblemILP():
 
         for n in range(self.N_NODES):
             self.prob += pulp.lpSum(
+                    [self.tnam[t][n] for t in range(self.N_TASKS)]
+                ) >= self.n_sel[n]
+            # Ensure that a node is selected only when there is at least one
+            # service assigned
+
+            self.prob += pulp.lpSum(
                     [self.TASK_MEM_ARRAY[t] * self.tnam[t][n]
                         for t in range(self.N_TASKS)]
                 ) <= self.NODE_MEM_ARRAY[n]
             # Ensure that node's memory limit is not surpassed
+
 
     def _setObjectiveFunction(self):
         #self.prob += self._getObjectiveExpression(0), "Services' average distance to user"

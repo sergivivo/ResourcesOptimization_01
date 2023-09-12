@@ -2,8 +2,8 @@
 
 SEED=727
 
-NODES=20
-TASKS=40
+NODES=10
+TASKS=20
 USERS=5
 
 POP_SIZE=100
@@ -12,28 +12,32 @@ MUTATION_PROB=0.2
 ALGORITHM='RNSGA2'
 N_PARTITIONS=16
 
+mkdir -p "data/network"
+mkdir -p "data/solutions/$NODES:$TASKS:$USERS"
+mkdir -p "data/plot/$NODES:$TASKS:$USERS"
+
 python3 main.py --seed $SEED generate \
 	--n_nodes $NODES --n_tasks $TASKS --n_users $USERS \
 	-o "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS
 
-#for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
-#	echo "$ALGORITHM"
-#	for SEED2 in {1..5}; do
-#		echo "  Execution $SEED2"
-#		python3 main.py --seed $SEED2 solve \
-#			-i "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS \
-#			--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB --save_history \
-#			--algorithm $ALGORITHM \
-#			-o "data/solutions/$NODES:$TASKS:$USERS/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN &
-#
-#		pids[${SEED2}]=$!
-#	done
-#
-#	for pid in ${pids[*]}; do
-#		wait $pid
-#	done
-#	echo "DONE"
-#done
+for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
+	echo "$ALGORITHM"
+	for SEED2 in {1..5}; do
+		echo "  Execution $SEED2"
+		python3 main.py --seed $SEED2 solve \
+			-i "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS \
+			--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB --save_history \
+			--algorithm $ALGORITHM \
+			-o "data/solutions/$NODES:$TASKS:$USERS/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN &
+
+		pids[${SEED2}]=$!
+	done
+
+	for pid in ${pids[*]}; do
+		wait $pid
+	done
+	echo "DONE"
+done
 
 # TODO: Monitorizar el tiempo de ejecución, para tener métricas más rigurosas para hacer un estudio
 

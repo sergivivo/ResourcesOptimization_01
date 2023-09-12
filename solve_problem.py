@@ -40,6 +40,9 @@ def solve(ntw, configs):
         problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose)
 
         problem.solve()
+
+        if configs.print:
+            print(problem.getSolutionString())
         return "{} {}".format(problem.getObjective(0), problem.getObjective(1))
 
     else:

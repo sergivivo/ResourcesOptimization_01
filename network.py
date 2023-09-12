@@ -4,8 +4,9 @@ import numpy as np
 
 import random
 
-from ntw_functions import barabasi_albert_weighted_graph, add_users
+from ntw_functions import barabasi_albert_weighted_graph, add_users, get_pareto_distribution, truncate_array
 from ntw_classes import Node, User, Task
+
 
 # CLASSES
 # ==============================================================================
@@ -29,17 +30,18 @@ class Network:
         add_users(self.graph, conf.n_users, conf.min_weight, conf.max_weight)
 
         # Memory for each node
-        self.memory = sorted([
-                random.choice(conf.node_memory_choice)
-                    for i in range(conf.n_nodes)
-                    ], reverse=True)
-
-        it = iter(self.memory)
+        self.memory = truncate_array(
+            get_pareto_distribution(
+                conf.node_memory_pareto_shape, 
+                conf.n_nodes,
+                conf.node_memory_choice[0]),
+            step_array=np.array(
+                conf.node_memory_choice))
 
         self.nodes = [
-                Node(
-                    max_tasks = random.choice(conf.node_max_tasks_choice)
-                ) for _ in range(conf.n_nodes)]
+            Node(
+                max_tasks = random.choice(conf.node_max_tasks_choice)
+            ) for _ in range(conf.n_nodes)]
 
         # Assign memory to each node depending on its centrality giving more
         # memory to the nodes that have more betweenness centrality
@@ -53,10 +55,13 @@ class Network:
         # assigning these services to a single user. Servers for these tasks
         # will be assigned case by case depending on the optimization tasks.
         self.tasks = [
-                Task(
-                    memory = round(random.uniform(conf.task_min_memory, conf.task_max_memory), 2),
-                    user_id = random.randrange(conf.n_users) # TODO: remove
-                ) for _ in range(conf.n_tasks)]
+            Task(
+                memory = round(
+                    get_pareto_distribution(
+                        conf.task_memory_pareto_shape, 1, conf.task_min_memory,
+                    ).clip(max=conf.task_max_memory)[0], 2),
+                user_id = random.randrange(conf.n_users) # TODO: remove
+            ) for _ in range(conf.n_tasks)]
 
         # Generate the user access to each service. A user can access many
         # services and a service can be accessed by many users, so the resulting
@@ -518,10 +523,16 @@ if __name__ == '__main__':
 
     ntw = Network(configs)
 
-    print(ntw.getTaskUserAssignmentMatrix())
-    print(ntw.getUserNodeDistanceMatrix())
-    print(ntw.getTasksMinAverageDistanceToUser())
-    print(ntw.getTasksMaxAverageDistanceToUser())
+    ta = ntw.getTaskMemoryArray()
+    na = ntw.getNodeMemoryArray()
+
+    print(ta, ta.sum())
+    print(na, na.sum())
+
+    #print(ntw.getTaskUserAssignmentMatrix())
+    #print(ntw.getUserNodeDistanceMatrix())
+    #print(ntw.getTasksMinAverageDistanceToUser())
+    #print(ntw.getTasksMaxAverageDistanceToUser())
 
     #matrix = np.zeros((configs.n_tasks, configs.n_nodes), np.uint8)
     #for row in range(configs.n_tasks):

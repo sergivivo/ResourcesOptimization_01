@@ -43,6 +43,20 @@ parser_generate.add_argument('--paint', action='store_true', help='Paint the gra
 parser_generate.add_argument('--print', action='store_true', help='Print on console useful information about the generated network')
 parser_generate.add_argument('-o', '--output', type=argparse.FileType('wb'), help='Output file path used for storing the network data')
 
+# Network analysis
+parser_analyze = subparsers.add_parser('analyze', help='Analyze the generated network using several tools')
+
+parser_analyze.add_argument('-i', '--input', type=argparse.FileType('rb'), help='Input file path used for generating the network')
+
+# Ideas para opciones TODO:
+# - Analizar memoria de los nodos
+# - Analizar memoria de las tareas
+# - Pasar una matriz de asignación de tareas/nodos, si no viene ya incorporada:
+#     - Analizar memoria ocupada
+#     - Analizar distancia entre usuarios
+# - Permitir obtener undm, tuam y tudm
+# - Analizar grado de centralidad
+
 # Pymoo optimization problem solving
 parser_solve = subparsers.add_parser('solve', help='Solve optimization problem')
 
@@ -87,14 +101,18 @@ parser_plot.add_argument('--y_label', type=str, default='', help='Label for Y ax
 
 parser_plot.add_argument('-o', '--output', type=argparse.FileType('wb'), help='Output file path used for saving plot result')
 
+# TODO: pasándole un network por parámetro, permitir imprimir memoria/nodo para ver frente pareto
+#   - Frente pareto memoria de los nodos
+#   - Frente pareto memoria de las tareas
+
 
 # CONFIG GENERATOR
 # ==============================================================================
 configs = parser.parse_args()
 configs.node_memory_choice = NODE_MEMORY_CHOICE
 configs.node_max_tasks_choice = NODE_MAX_TASKS_CHOICE
-
-
+configs.node_memory_pareto_shape = NODE_MEMORY_PARETO_SHAPE
+configs.task_memory_pareto_shape = TASK_MEMORY_PARETO_SHAPE
 
 if __name__ == '__main__':
     print(configs)
