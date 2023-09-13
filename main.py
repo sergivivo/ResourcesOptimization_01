@@ -112,7 +112,9 @@ if __name__ == "__main__":
         ntw = pickle.load(configs.input)
 
         solution = solve(ntw, configs)
-        if not solution:
+        if solution is None:
+            if configs.output:
+                configs.output.close()
             sys.exit(1)
 
         if configs.print:

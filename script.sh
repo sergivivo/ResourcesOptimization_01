@@ -2,9 +2,22 @@
 
 SEED=727
 
-NODES=10
-TASKS=20
-USERS=5
+NODES=20
+TASKS=40
+USERS=20
+
+#mkdir -p "data/network"
+#
+#for N in $(seq 20 20 80); do
+#for T in $(seq 20 20 $((N*2))); do
+#for U in $(seq 20 20 $N); do
+#	echo $N $T $U
+#	python3 main.py --seed $SEED generate \
+#		--n_nodes $N --n_tasks $T --n_users $U \
+#		-o "data/network/ntw_"$SEED"_"$N":"$T":"$U
+#done
+#done
+#done
 
 POP_SIZE=100
 N_GEN=100
@@ -12,13 +25,8 @@ MUTATION_PROB=0.2
 ALGORITHM='RNSGA2'
 N_PARTITIONS=16
 
-mkdir -p "data/network"
 mkdir -p "data/solutions/$NODES:$TASKS:$USERS"
 mkdir -p "data/plot/$NODES:$TASKS:$USERS"
-
-python3 main.py --seed $SEED generate \
-	--n_nodes $NODES --n_tasks $TASKS --n_users $USERS \
-	-o "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS
 
 for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
 	echo "$ALGORITHM"
@@ -28,7 +36,7 @@ for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
 			-i "data/network/ntw_"$SEED"_"$NODES":"$TASKS":"$USERS \
 			--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB --save_history \
 			--algorithm $ALGORITHM \
-			-o "data/solutions/$NODES:$TASKS:$USERS/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN &
+			-o "data/solutions/$NODES:$TASKS:$USERS/"$ALGORITHM"_"$SEED":"$SEED2"_"$NODES":"$TASKS":"$USERS"_"$POP_SIZE":"$N_GEN
 
 		pids[${SEED2}]=$!
 	done

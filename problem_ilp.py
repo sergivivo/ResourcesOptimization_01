@@ -30,7 +30,7 @@ class ProblemILP():
         self.f2_max = self.N_NODES
 
         # Defining the problem
-        self.prob = pulp.LpProblem('Node selection problem', pulp.LpMinimize)
+        self.prob = pulp.LpProblem('TaskNodeAssignmentMatrixBimodeToSinglemodeILP', pulp.LpMinimize)
 
         # Defining the variables
         self.tnam = pulp.LpVariable.dicts(
@@ -41,7 +41,7 @@ class ProblemILP():
         self.n_sel = pulp.LpVariable.dicts(
                 "SelectedNodeVector",
                 range(self.N_NODES),
-                cat="Binary") # node selection for task assignment
+                cat="Binary")
 
 
         # Objective function
@@ -164,8 +164,31 @@ class ProblemILP():
         s = ""
         for t in range(self.N_TASKS):
             for n in range(self.N_NODES):
-                s += "{: <2}".format(int(pulp.value(self.tnam[t][n])))
+                s += '{: <2}'.format("{:.0f}".format(pulp.value(self.tnam[t][n])))
             s += '\n'
+        s += '\n'
+
+        for n in range(self.N_NODES):
+            s += '{: <2}'.format("{:.0f}".format(pulp.value(self.n_sel[n])))
+        s += '\n'
+        s += '\n'
+
+        for t in range(self.N_TASKS):
+            s += '{: <8}'.format('{:.2f}'.format(self.TASK_MEM_ARRAY[t]))
+        s += '\n'
+        s += '\n'
+
+        for n in range(self.N_NODES):
+            s += '{: <8}'.format('{:.2f}'.format(self.NODE_MEM_ARRAY[n]))
+        s += '\n'
+
+        for n in range(self.N_NODES):
+            s += '{: <8}'.format('{:.2f}'.format(pulp.value(pulp.lpSum(
+                    [self.TASK_MEM_ARRAY[t] * self.tnam[t][n]
+                        for t in range(self.N_TASKS)]
+                ))))
+        s += '\n'
+
         return s
 
     def getSingleModeObjective(self):

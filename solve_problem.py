@@ -39,10 +39,13 @@ def solve(ntw, configs):
     if configs.algorithm == 'ILP':
         problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose)
 
-        problem.solve()
+        if problem.solve() != 'Optimal':
+            print("ERROR: No solution could be found.")
+            return None
 
         if configs.print:
             print(problem.getSolutionString())
+
         return "{} {}".format(problem.getObjective(0), problem.getObjective(1))
 
     else:
@@ -142,6 +145,11 @@ def solve(ntw, configs):
             seed=configs.seed,
             verbose=configs.verbose
         )
+
+        # Infeasible
+        if res.CV is None:
+            print("ERROR: No solution could be found.")
+            return None
 
         if configs.save_history:
             return res.algorithm.callback.string_history
