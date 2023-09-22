@@ -39,14 +39,27 @@ def solve(ntw, configs):
     if configs.algorithm == 'ILP':
         problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose)
 
-        if problem.solve() != 'Optimal':
+        status = problem.solve()
+        solution = None
+        o1, o2 = None, None
+        while status == 'Optimal':
+            solution = problem.getSolutionString()
+            o1, o2 = problem.getObjective(0), problem.getObjective(1)
+            #print(solution)
+            #print(o1, o2)
+            #print('===========')
+            status = problem.solve()
+
+        if solution is None:
             print("ERROR: No solution could be found.")
             return None
 
         if configs.print:
             print(problem.getSolutionString())
 
-        return "{} {}".format(problem.getObjective(0), problem.getObjective(1))
+        return "{} {}".format(o1, o2)
+        #return "{} {}".format(problem.getObjectiveNormalized(0), problem.getObjectiveNormalized(1))
+        #return "{} {}".format(problem.getSingleModeObjective(), '0')
 
     else:
 

@@ -40,8 +40,11 @@ parser_generate.add_argument('--n_users', type=int, default=N_USERS, help='Numbe
 parser_generate.add_argument('-p', '--probability', type=float, choices=[Range(0.0, 1.0)], default=P, help='Probability of a user requesting a service.')
 
 parser_generate.add_argument('--paint', action='store_true', help='Paint the graph with Matplotlib')
+parser_generate.add_argument('--paint_seed', type=int, default=1, help='Seed used for graph painting')
 parser_generate.add_argument('--print', action='store_true', help='Print on console useful information about the generated network')
 parser_generate.add_argument('-o', '--output', type=argparse.FileType('wb'), help='Output file path used for storing the network data')
+
+# Network modification (after it was generated)
 
 # Network analysis
 parser_analyze = subparsers.add_parser('analyze', help='Analyze the generated network using several tools')

@@ -29,16 +29,6 @@ def barabasi_albert_weighted_graph(n, m, seed=None, minw=0., maxw=1., roundw=1):
         G[orig][dest]['weight'] = round(random.uniform(minw, maxw), roundw)
     return G
 
-def add_users(G, users, minw=0., maxw=1., roundw=1):
-    """
-    Add users as nodes of a graph. These nodes act in a different way than
-    the server nodes. The users' ids start after last server's id.
-    """
-    nodesl = len(G.nodes)
-    for i in range(nodesl, nodesl + users):
-        G.add_node(i)
-        G.add_edge(i, random.randrange(nodesl), weight=round(random.uniform(minw, maxw), roundw))
-
 def get_pareto_distribution(shape, size, mode):
     return (np.random.pareto(shape, size) + 1) * mode
 

@@ -4,7 +4,7 @@ import numpy as np
 
 import random
 
-from ntw_functions import barabasi_albert_weighted_graph, add_users, get_pareto_distribution, truncate_array
+from ntw_functions import barabasi_albert_weighted_graph, get_pareto_distribution, truncate_array
 from ntw_classes import Node, User, Task
 
 
@@ -17,6 +17,7 @@ class Network:
     give valuable information needed for the optimizations.
     """
     def __init__(self, conf):
+        self.seed = conf.seed
         np.random.seed(conf.seed)
         
         # Generate the graph
@@ -27,8 +28,6 @@ class Network:
         # https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
         bc_sorted = sorted(btw_cnt.items(), reverse=True, key=lambda e: e[1])
 
-        add_users(self.graph, conf.n_users, conf.min_weight, conf.max_weight)
-
         # Memory for each node
         self.memory = truncate_array(
             get_pareto_distribution(
@@ -38,6 +37,8 @@ class Network:
             step_array=np.array(
                 conf.node_memory_choice))
 
+        self.memory = np.sort(self.memory)[::-1]
+
         self.nodes = [
             Node(
                 max_tasks = random.choice(conf.node_max_tasks_choice)
@@ -45,11 +46,9 @@ class Network:
 
         # Assign memory to each node depending on its centrality giving more
         # memory to the nodes that have more betweenness centrality
+        #np.random.shuffle(self.memory)
         for i, _ in bc_sorted:
             self.nodes[i].memory = self.memory[i]
-
-        # Generate the management data for the users
-        self.users = [User() for _ in range(conf.n_users)]
 
         # Generate the management data for the services while also randomly
         # assigning these services to a single user. Servers for these tasks
@@ -63,11 +62,43 @@ class Network:
                 user_id = random.randrange(conf.n_users) # TODO: remove
             ) for _ in range(conf.n_tasks)]
 
+        # Generate the management data for the users
+        self.users = [User() for _ in range(conf.n_users)]
+        self._addUsers(conf.min_weight, conf.max_weight)
+
         # Generate the user access to each service. A user can access many
         # services and a service can be accessed by many users, so the resulting
         # datastructure is a set of pairs of tasks/users.
         tu_matrix = self._generateTaskUserAssignmentMatrix_v2(p=conf.probability)
         self.task_user = np.transpose(np.nonzero(tu_matrix))
+
+    def _addUsers(self, minw=0., maxw=1., roundw=1):
+        """
+        Add users as nodes of a graph. These nodes act in a different way than
+        the server nodes. The users' ids start after last server's id.
+        """
+        n_nodes = len(self.nodes)
+        n_users = len(self.users)
+
+        # Assign a probability to each node depending on its degree of
+        # centrality, giving more probability to nodes with less centrality
+        bc = self.getBetweennessCentrality()
+        maxv = max(bc.values())
+        bc_prob = [(k, (maxv - v)/(maxv*n_nodes - maxv)) for (k, v) in bc.items()]
+
+        for uid in range(n_nodes, n_nodes + n_users):
+            # Get node's id given a random float
+            acc_prob = 0
+            p = random.random()
+            for i in range(n_nodes):
+                acc_prob += bc_prob[i][1]
+                if p < acc_prob:
+                    break
+
+            nid = bc_prob[i][0]
+
+            self.graph.add_node(uid)
+            self.graph.add_edge(uid, nid, weight=round(random.uniform(minw, maxw), roundw))
 
     def _generateTaskUserAssignmentMatrix_v1(self):
         """
@@ -156,6 +187,8 @@ class Network:
 
             # Shuffle rows
             np.random.shuffle(tu_matrix)
+            if m == 1:
+                return tu_matrix
             p_c = (m*p-1)/(m-1)
 
         else:
@@ -165,6 +198,8 @@ class Network:
 
             # Shuffle columns
             np.random.shuffle(tu_matrix.T)
+            if n == 1:
+                return tu_matrix
             p_c = (n*p-1)/(n-1)
 
         # Set remaining ones randomly according to new probability
@@ -177,7 +212,7 @@ class Network:
         return tu_matrix
 
 
-    def displayGraph(self):
+    def displayGraph(self, seed=1):
         """
         Display the resulting graph of the network with the server nodes,
         users and the weights of the connections. Green nodes represent the
@@ -186,7 +221,7 @@ class Network:
         """
         plt_gnp = plt.subplot(1,1,1)
 
-        pos = nx.spring_layout(self.graph)
+        pos = nx.spring_layout(self.graph, seed=seed)
         color = ['lime' if node < len(self.nodes) else 'red' for node in self.graph]
         nlabels = {
                 i:'{}{}'.format(
@@ -291,6 +326,11 @@ class Network:
         tnam = np.ones((len(self.tasks), len(self.nodes)), dtype=np.uint8)
         return self.getTasksAverageDistanceToUser(
                 tnam, undm=undm, tuam=tuam, maximize=True)
+
+    def getBetweennessCentrality(self):
+        return nx.betweenness_centrality(
+                self.graph.subgraph(range(len(self.nodes))),
+                seed=self.seed)
 
     # Dataclasses
     def getUser(self, user_id):
@@ -523,11 +563,6 @@ if __name__ == '__main__':
 
     ntw = Network(configs)
 
-    ta = ntw.getTaskMemoryArray()
-    na = ntw.getNodeMemoryArray()
-
-    print(ta, ta.sum())
-    print(na, na.sum())
 
     #print(ntw.getTaskUserAssignmentMatrix())
     #print(ntw.getUserNodeDistanceMatrix())

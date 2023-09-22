@@ -23,11 +23,14 @@ class ProblemILP():
 
         self.verbose = verbose
 
-        # Values needed for normalization
+        # Values needed for normalization TODO: Recalcular y probar otros valores de normalización
         self.f1_min = network.getTasksMinAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
         self.f1_max = network.getTasksMaxAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
-        self.f2_min = network.getMinimumNNodesNeeded()
+        self.f2_min = 0
         self.f2_max = self.N_NODES
+        #print('f1:', self.f1_min, self.f1_max)
+        #print('f2:', self.f2_min, self.f2_max)
+        #print()
 
         # Defining the problem
         self.prob = pulp.LpProblem('TaskNodeAssignmentMatrixBimodeToSinglemodeILP', pulp.LpMinimize)
@@ -157,6 +160,10 @@ class ProblemILP():
 
     def solve(self):
         self.prob.solve(pulp.PULP_CBC_CMD(msg=1 if self.verbose else 0))
+        self.prob += \
+                self.l       * self._getObjectiveExpressionNormalized(0) + \
+                (1 - self.l) * self._getObjectiveExpressionNormalized(1) <= \
+                pulp.value(self.prob.objective) - 0.000001
         return pulp.LpStatus[self.prob.status]
     
     def getSolutionString(self):
@@ -196,6 +203,9 @@ class ProblemILP():
 
     def getObjective(self, obj_n):
         return pulp.value(self._getObjectiveExpression(obj_n))
+
+    def getObjectiveNormalized(self, obj_n):
+        return pulp.value(self._getObjectiveExpressionNormalized(obj_n))
 
     def changeLambda(self, l):
         self.l = l
