@@ -586,7 +586,7 @@ class Network:
 
     # ANALYSIS
     # ==========================================================================
-    def checkMemoryRequirements():
+    def checkMemoryRequirements(self):
         return np.sum(self.memory) >= np.sum([t.memory for t in self.tasks])
 
 
