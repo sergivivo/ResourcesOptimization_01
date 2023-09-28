@@ -2,6 +2,7 @@ from network import Network
 from parameters import configs
 from solve_problem import solve
 from plot import plot_convergence, plot_scatter_legend
+from arrange import get_pareto_front_from_files
 
 import random
 import numpy as np
@@ -39,7 +40,8 @@ if __name__ == "__main__":
             configs.output.close()
 
     elif configs.command == 'modify':
-        pass
+        import pickle
+        ntw = pickle.load(configs.input)
 
     elif configs.command == 'analyze':
         # Analyze the network with or without a given solution
@@ -66,7 +68,19 @@ if __name__ == "__main__":
 
     elif configs.command == 'arrange':
         # Arrange files of solutions and prepare them for ploting
-        pass
+        array = get_pareto_front_from_files(configs)
+
+        s = ''
+        for x, y in array:
+            s += '{} {}\n'.format(x,y)
+        s = s[:-1]
+
+        if configs.print:
+            print(s)
+
+        if configs.output:
+            configs.output.write(s)
+            configs.output.close()
     
     elif configs.command == 'plot':
         # Plot files

@@ -37,7 +37,7 @@ algdict = {
 def solve(ntw, configs):
 
     if configs.algorithm == 'ILP':
-        problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose)
+        problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose, o1_max=configs.o1_max, o2_min=configs.o2_min)
 
         status = problem.solve()
         solution = None
@@ -45,9 +45,7 @@ def solve(ntw, configs):
         while status == 'Optimal':
             solution = problem.getSolutionString()
             o1, o2 = problem.getObjective(0), problem.getObjective(1)
-            #print(solution)
-            #print(o1, o2)
-            #print('===========')
+            print('Current solution:', o1, o2)
             status = problem.solve()
 
         if solution is None:

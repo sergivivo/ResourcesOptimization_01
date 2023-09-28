@@ -167,8 +167,8 @@ class Problem01v3(ElementwiseProblem):
         self.tuam = network.getTaskUserAssignmentMatrix()
 
         # Values needed for normalization
-        self.f1_min = network.getTasksMinAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
-        self.f1_max = network.getTasksMaxAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
+        self.f1_min = network.getTasksMinAverageDistanceToUser_v2(undm=self.undm, tuam=self.tuam)
+        self.f1_max = network.getTasksMaxAverageDistanceToUser_v2(undm=self.undm, tuam=self.tuam)
         self.f2_min = network.getMinimumNNodesNeeded()
         self.f2_max = self.N_NODES
 

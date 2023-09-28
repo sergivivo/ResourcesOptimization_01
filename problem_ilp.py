@@ -5,7 +5,7 @@ import random
 
 class ProblemILP():
 
-    def __init__(self, network, l=0.5, verbose=False):
+    def __init__(self, network, l=0.5, verbose=False, o1_max=None, o2_min=None):
         self.network = network
 
         # Define the constants
@@ -24,13 +24,10 @@ class ProblemILP():
         self.verbose = verbose
 
         # Values needed for normalization TODO: Recalcular y probar otros valores de normalización
-        self.f1_min = network.getTasksMinAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
-        self.f1_max = network.getTasksMaxAverageDistanceToUser(undm=self.undm, tuam=self.tuam)
-        self.f2_min = 0
+        self.f1_min = network.getTasksMinAverageDistanceToUser_v2(undm=self.undm, tuam=self.tuam)
+        self.f1_max = network.getTasksMaxAverageDistanceToUser_v2(undm=self.undm, tuam=self.tuam)
+        self.f2_min = network.getMinimumNNodesNeeded()
         self.f2_max = self.N_NODES
-        #print('f1:', self.f1_min, self.f1_max)
-        #print('f2:', self.f2_min, self.f2_max)
-        #print()
 
         # Defining the problem
         self.prob = pulp.LpProblem('TaskNodeAssignmentMatrixBimodeToSinglemodeILP', pulp.LpMinimize)
@@ -74,6 +71,13 @@ class ProblemILP():
                         for t in range(self.N_TASKS)]
                 ) <= self.NODE_MEM_ARRAY[n]
             # Ensure that node's memory limit is not surpassed
+
+        # Helper constraints
+        if o1_max is not None:
+            self.prob += self._getObjectiveExpression(0) <= o1_max
+
+        if o2_min is not None:
+            self.prob += self._getObjectiveExpression(1) >= o2_min
 
 
     def _setObjectiveFunction(self):

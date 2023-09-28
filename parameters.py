@@ -82,16 +82,32 @@ parser_solve.add_argument('--save_history', action='store_true', help='Will save
 parser_solve.add_argument('--single_mode', action='store_true', help='Will force the algorithm to use single mode optimization')
 parser_solve.add_argument('-l', '--lmb', type=float, choices=[Range(0.0, 1.0)], default=LAMBDA, help='Parameter used for weighted average when converting bimode to single-mode.')
 
+# Helper for ILP constraint handling
+parser_solve.add_argument('--o1_max', type=float, default=None, help='Will use this value as a max value constraint for O1')
+parser_solve.add_argument('--o2_min', type=float, default=None, help='Will use this value as a min value constraint for O2')
+
 # Specific parameter for algorithms that need reference directions
 parser_solve.add_argument('--n_partitions', type=int, default=N_PARTITIONS, help='Specific parameter for algorithm NSGA3. Set the number of partitions for reference directions.')
 
 # Specific parameter for algorithms that need reference point
 parser_solve.add_argument('--ref_points', type=type_point_list, default=REF_POINTS, help='Specific parameter for algorithms that requiere reference points')
 
+
+
+# Solution arrange
+parser_arrange = subparsers.add_parser('arrange', help='Arrange solution files')
+
+parser_arrange.add_argument('-i', '--input', nargs='+', type=argparse.FileType('r'), help='List of input file paths used for arranging the solutions')
+parser_arrange.add_argument('--print', action='store_true', help='Print on console the resulting arrangement')
+parser_arrange.add_argument('-o', '--output', type=argparse.FileType('w'), help='Output file path used for storing the arranged solution data')
+
+
+
 # Solution ploting
 parser_plot = subparsers.add_parser('plot', help='Plot the resulting data from the solution')
 
 parser_plot.add_argument('-i', '--input', nargs='+', type=argparse.FileType('r'), help='List of input file paths used for plotting the solutions')
+parser_plot.add_argument('--ref_points', type=type_point_list, default=None, help='Specific parameter for plotting reference points')
 
 parser_plot.add_argument('--history', action='store_true', help='Plot a single solution including the history representing the evolution with the form of a scatter plot')
 

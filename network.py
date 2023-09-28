@@ -327,6 +327,12 @@ class Network:
         return self.getTasksAverageDistanceToUser(
                 tnam, undm=undm, tuam=tuam, maximize=True)
 
+    def getTasksMinAverageDistanceToUser_v2(self, undm=None, tuam=None):
+        return np.average(np.min(self.getTaskNodeDistanceMatrix(undm, tuam), axis=1))
+
+    def getTasksMaxAverageDistanceToUser_v2(self, undm=None, tuam=None):
+        return np.average(np.max(self.getTaskNodeDistanceMatrix(undm, tuam), axis=1))
+
     def getBetweennessCentrality(self):
         return nx.betweenness_centrality(
                 self.graph.subgraph(range(len(self.nodes))),
@@ -514,6 +520,25 @@ class Network:
                 assignment[t.id, t.node_id] += 1
 
         return assignment
+    
+    def getTaskNodeDistanceMatrix(self, undm=None, tuam=None):
+        """Get the matrix of the average distance that a service can have to
+        the users that requests it depending on the node that it is assigned"""
+        if undm is None: undm = self.getUserNodeDistanceMatrix()
+        if tuam is None: tuam = self.getTaskUserAssignmentMatrix()
+
+        tua_sum = np.sum(tuam, axis=1)
+        tndm = np.zeros((len(self.tasks), len(self.nodes)))
+
+        for t in range(len(self.tasks)):
+            for n in range(len(self.nodes)):
+                tnd_sum = 0.0
+                for u in range(len(self.users)):
+                    tnd_sum += tuam[t][u] * undm[u][n]
+                tndm[t][n] = tnd_sum / tua_sum[t]
+
+        return tndm
+
 
     def getTaskNodeMemoryMatrix(self, m=None):
         """Returns a task/node memory matrix given a task/node assignment matrix"""
@@ -563,6 +588,19 @@ if __name__ == '__main__':
 
     ntw = Network(configs)
 
+    print(ntw.getTaskNodeDistanceMatrix())
+
+    import time
+
+    t0 = time.time()
+    print(ntw.getTasksMinAverageDistanceToUser(), ntw.getTasksMaxAverageDistanceToUser())
+    t1 = time.time()
+    print(t1-t0)
+
+    t0 = time.time()
+    print(ntw.getTasksMinAverageDistanceToUser_v2(), ntw.getTasksMaxAverageDistanceToUser_v2())
+    t1 = time.time()
+    print(t1-t0)
 
     #print(ntw.getTaskUserAssignmentMatrix())
     #print(ntw.getUserNodeDistanceMatrix())

@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
+from file_utils import parse_file
 
 def get_recommended_ticks(o_min, o_max, integer=False):
     STEPS = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1., 2., 5., 10., 20., 50., 100.]
@@ -14,32 +15,6 @@ def get_recommended_ticks(o_min, o_max, integer=False):
             start = np.floor(o_min / step) * step
             end   = (np.ceil(o_max / step) + 1) * step
             return np.arange(start, end, step)
-
-def parse_file(f):
-    """
-    Three possible formats for the columns:
-        <ts_date> <ts_time> <generation> <o1> <o2>
-        <generation> <o1> <o2>
-        <o1> <o2>
-    """
-    first = f.readline().split()
-    columns = len(first)
-    lst = first + f.read().split()
-    f.close()
-
-    if columns == 2:
-        generation = []
-        o1 = [float(i) for i in lst[::columns]]
-        o2 = [float(i) for i in lst[1::columns]]
-    elif columns >= 3:
-        # Ignore timestamps
-        generation = [int(i) for i in lst[columns-3::columns]]
-        o1 = [float(i) for i in lst[columns-2::columns]]
-        o2 = [float(i) for i in lst[columns-1::columns]]
-    else:
-        generation, o1, o2 = [], [], []
-
-    return generation, o1, o2
 
 def plot_scatter_legend(configs):
     solutions = []
@@ -61,6 +36,11 @@ def plot_scatter_legend(configs):
     o1_all = [e for d in solutions for e in d['x']]
     o2_all = [e for d in solutions for e in d['y']]
 
+    if configs.ref_points is not None:
+        ref_points = np.array(configs.ref_points)
+        o1_all += ref_points[:,0].tolist()
+        o2_all += ref_points[:,1].tolist()
+
     # X axis ticks
     o1_min, o1_max = min(o1_all), max(o1_all)
     o1_ticks = get_recommended_ticks(o1_min, o1_max)
@@ -81,6 +61,10 @@ def plot_scatter_legend(configs):
     # Fill missing names in legend so we plot all solutions even if there's any without a label
     legend = configs.legend if configs.legend else []
     names = legend + [''] * (len(solutions) - len(legend))
+
+    if configs.ref_points is not None:
+        color = mcolors.TABLEAU_COLORS['tab:cyan']
+        ax.scatter(ref_points[:,0], ref_points[:,1], s=30, facecolors=color, edgecolors=color, label='ILP')
 
     for s, color, name in zip(solutions, mcolors.TABLEAU_COLORS, names):
         ax.scatter(s['x'], s['y'], s=30, facecolors=color, edgecolors=color, label=name)
