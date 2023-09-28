@@ -172,7 +172,10 @@ class Problem01v3(ElementwiseProblem):
         self.f2_min = network.getMinimumNNodesNeeded()
         self.f2_max = self.N_NODES
 
-        #np.getTaskAverageDistanceToUser()
+        if self.f2_min == self.f2_max:
+            self.f2_max += 1 
+            # This way, we avoid dividing by 0 and enforce 0 as normalized O2
+            # value, so it does not interfere with O1 in any way
 
         super().__init__(
                 n_var = 1,

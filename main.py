@@ -39,6 +39,15 @@ if __name__ == "__main__":
             pickle.dump(ntw, configs.output)
             configs.output.close()
 
+        if not ntw.checkMemoryRequirements():
+            print('WARNING: Memory requirements could not be satisfied.')
+            print('- Total node memory: {}'.format(
+                    ntw.getTotalNodeMemory()))
+            print('- Total task memory: {}'.format(
+                    ntw.getTotalTaskMemory()))
+            print('Change memory limit or amount of tasks and try again')
+            sys.exit(1)
+
     elif configs.command == 'modify':
         import pickle
         ntw = pickle.load(configs.input)

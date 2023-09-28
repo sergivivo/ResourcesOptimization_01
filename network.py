@@ -249,6 +249,12 @@ class Network:
     def getNodeAvailableMemory(self, node_id):
         return self.nodes[node_id].memory - getNodeOccupiedMemory(node_id)
 
+    def getTotalNodeMemory(self):
+        return np.sum(self.memory)
+
+    def getTotalTaskMemory(self):
+        return np.sum([t.memory for t in self.tasks])
+
     def getNUsers(self):
         return len(self.users)
 
@@ -577,6 +583,11 @@ class Network:
     # ==========================================================================
     def export_gexf(self, path):
         nx.write_gexf(self.graph, path)
+
+    # ANALYSIS
+    # ==========================================================================
+    def checkMemoryRequirements():
+        return np.sum(self.memory) >= np.sum([t.memory for t in self.tasks])
 
 
 
