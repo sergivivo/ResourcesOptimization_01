@@ -32,7 +32,7 @@ for USERS in $(seq 20 20 $NODES); do
 		o1_max=10000
 		o2_min=0
 		for l in $LAMBDA_LIST; do
-			echo "  $i/$N_POINTS: lambda=$l"
+			echo "  $NODES $TASKS $USERS: $i/$N_POINTS: lambda=$l"
 
 			# Async call
 			python3 main.py --seed $SEED2 solve \
@@ -40,7 +40,7 @@ for USERS in $(seq 20 20 $NODES); do
 				--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB \
 				--algorithm $ALGORITHM --n_partitions $N_PARTITIONS --single_mode --lmb $l \
 				--o1_max $o1_max --o2_min $o2_min \
-				--output "data/solutions/$NODES-$TASKS-$USERS/tmp/ref_$i"
+				--output "data/solutions/$NODES-$TASKS-$USERS/tmp/ref_$i" &
 
 
 			pids[${i}]=$!
@@ -65,13 +65,13 @@ for USERS in $(seq 20 20 $NODES); do
 		echo "[${array[*]}]" | tr -s '[:blank:]' ',' > "data/solutions/$NODES-$TASKS-$USERS/ref_points/rp_"$ALGORITHM"_"$SEED"-"$SEED2
 	) &
 
-	pids[${j}]=$!
+	jpids[${j}]=$!
 	j=$((j+1))
 done
 done
 done
 
-for pid in ${pids[*]}; do
+for jpid in ${jpids[*]}; do
 	wait $pid
 done
 
