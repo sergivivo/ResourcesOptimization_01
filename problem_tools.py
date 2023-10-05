@@ -89,6 +89,41 @@ class MyMutation(Mutation):
 
     def _do(self, problem, X, **kwargs):
         for i in range(len(X)):
+            if random.random() < self.probability:
+                row = random.randrange(problem.N_TASKS)
+                available = problem.network.getNodeAvailableMemoryArray(X[i,0])
+                indexes = np.arange(len(available), dtype=np.uint16)
+
+                # Filter so that we only choose between nodes with enough
+                # available memory to hold this task
+                task_memory = problem.network.getTask(row).memory
+                filtered = indexes[available > task_memory]
+
+                # Subtract both sets and choose a new column
+                curr_idxs = np.nonzero(X[i, 0][row])
+                choices = np.setdiff1d(filtered, curr_idxs)
+
+                if choices.size > 0:
+                    # Set to zero current column
+                    for col in curr_idxs:
+                        X[i, 0][row, col] = 0
+
+                    # Set to one new columns
+                    col = random.choice(choices)
+                    X[i, 0][row, col] = 1
+
+        return X
+
+class MyMutation_backup(Mutation):
+    """Change the position of the 1 in a row with a given probability"""
+    def __init__(self, p=0.05):
+        super().__init__()
+        self.probability = p
+
+    def _do(self, problem, X, **kwargs):
+        # TODO: Escoger un individuo para mutar
+        for i in range(len(X)):
+            # TODO: Escoger aleatoriamente una sola fila y cambiarla siempre
             for row in range(problem.N_TASKS):
                 if random.random() < self.probability:
                     available = problem.network.getNodeAvailableMemoryArray(X[i,0])

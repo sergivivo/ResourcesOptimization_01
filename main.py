@@ -29,7 +29,10 @@ if __name__ == "__main__":
         ntw = Network(configs)
 
         if configs.print:
-            pass
+            print(ntw.getTotalNodeMemory())
+            print(ntw.getTotalTaskMemory())
+            print(ntw.memory)
+            print(ntw.getMinimumNNodesNeeded())
 
         if configs.paint:
             paint_graph(ntw, configs.paint_seed)
