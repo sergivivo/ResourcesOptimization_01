@@ -3,6 +3,7 @@ from parameters import configs
 from solve_problem import solve
 from plot import plot_convergence, plot_scatter_legend
 from arrange import get_pareto_front_from_files
+from analyze import get_table
 
 import random
 import numpy as np
@@ -55,11 +56,6 @@ if __name__ == "__main__":
         import pickle
         ntw = pickle.load(configs.input)
 
-    elif configs.command == 'analyze':
-        # Analyze the network with or without a given solution
-        import pickle
-        ntw = pickle.load(configs.input)
-
     elif configs.command == 'solve':
         # Solve a problem using a network and an optimization algorithm
         import pickle
@@ -92,6 +88,17 @@ if __name__ == "__main__":
 
         if configs.output:
             configs.output.write(s)
+            configs.output.close()
+             
+    elif configs.command == 'analyze':
+        # Analyze the solutions
+        table = get_table(configs)
+
+        if configs.print:
+            print(table)
+
+        if configs.output:
+            configs.output.write(table)
             configs.output.close()
     
     elif configs.command == 'plot':

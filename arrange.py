@@ -4,12 +4,13 @@ from file_utils import parse_file
 
 def get_pareto_front_from_array(array):
     idx_sorted = np.lexsort((array[:,1], array[:,0]))
+    # Investigar si para una misma X ordena también la Y de menor a mayor
     array_sorted = array[idx_sorted]
 
     min_y = 1000.
     pareto = []
     for p in array_sorted:
-        if p[1] <= min_y:
+        if p[1] <  min_y:
             pareto.append((p[0],p[1]))
             min_y = p[1]
 

@@ -46,11 +46,6 @@ parser_generate.add_argument('-o', '--output', type=argparse.FileType('wb'), hel
 
 # Network modification (after it was generated)
 
-# Network analysis
-parser_analyze = subparsers.add_parser('analyze', help='Analyze the generated network using several tools')
-
-parser_analyze.add_argument('-i', '--input', type=argparse.FileType('rb'), help='Input file path used for generating the network')
-
 # Ideas para opciones TODO:
 # - Analizar memoria de los nodos
 # - Analizar memoria de las tareas
@@ -103,6 +98,22 @@ parser_arrange.add_argument('-o', '--output', type=argparse.FileType('w'), help=
 
 
 
+
+# Solution analysis
+parser_analyze = subparsers.add_parser('analyze', help='Analyze the generated solutions using several tools')
+
+parser_analyze.add_argument('-i', '--input', nargs='+', type=argparse.FileType('r'), help='List of input file paths used for analyzing the solutions')
+parser_analyze.add_argument('--ref_points', type=type_point_list, default=REF_POINTS, help='Specific parameter for algorithms that requiere reference points')
+
+parser_analyze.add_argument('--alg_names', nargs='+', type=str, help='Algorithm names to use on the table')
+parser_analyze.add_argument('--gen_step', type=int, default=0, help='Generation step used for printing the evolution of each indicator')
+
+parser_analyze.add_argument('--network', type=argparse.FileType('rb'), help='Input file path used for retrieving the network, useful for calculating several needed parameters, like O1 and O2 max values')
+
+parser_analyze.add_argument('--print', action='store_true', help='Print on console the table')
+parser_analyze.add_argument('-o', '--output', type=argparse.FileType('w'), help='Output file path used for saving generated table')
+
+
 # Solution ploting
 parser_plot = subparsers.add_parser('plot', help='Plot the resulting data from the solution')
 
@@ -110,9 +121,11 @@ parser_plot.add_argument('-i', '--input', nargs='+', type=argparse.FileType('r')
 parser_plot.add_argument('--ref_points', type=type_point_list, default=None, help='Specific parameter for plotting reference points')
 
 parser_plot.add_argument('--history', action='store_true', help='Plot a single solution including the history representing the evolution with the form of a scatter plot')
+parser_plot.add_argument('--trim_gen', action='store_true', help='Plots generations until convergence')
 
 parser_plot.add_argument('--comparison', action='store_true', help='Plot multiple solutions comparing them in the same graph with the form of a scatter plot')
 parser_plot.add_argument('--legend', nargs='*', type=str, help='List of names for the different inputs to be plotted and added to the legend')
+
 
 parser_plot.add_argument('--title', type=str, default='', help='Title of the plot')
 parser_plot.add_argument('--x_label', type=str, default='', help='Label for X axis')

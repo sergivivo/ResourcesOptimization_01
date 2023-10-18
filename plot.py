@@ -45,13 +45,15 @@ def plot_scatter_legend(configs):
     o1_min, o1_max = min(o1_all), max(o1_all)
     o1_ticks = get_recommended_ticks(o1_min, o1_max)
     ax.set_xticks(o1_ticks)
-    #ax.set_xlim(o1_ticks[0], o1_ticks[-1])
+    half_x = (o1_ticks[1] - o1_ticks[0]) / 2
+    ax.set_xlim(o1_ticks[0] - half_x, o1_ticks[-1] + half_x)
 
     # Y axis ticks
     o2_min, o2_max = min(o2_all), max(o2_all)
     o2_ticks = get_recommended_ticks(o2_min, o2_max, integer=True)
     ax.set_yticks(o2_ticks)
-    #ax.set_ylim(o2_ticks[0], o2_ticks[-1])
+    half_y = (o2_ticks[1] - o2_ticks[0]) / 2
+    ax.set_ylim(o2_ticks[0] - half_y, o2_ticks[-1] + half_y)
 
     # Title and labels
     plt.xlabel(configs.x_label)
@@ -64,7 +66,7 @@ def plot_scatter_legend(configs):
 
     if configs.ref_points is not None:
         color = mcolors.TABLEAU_COLORS['tab:cyan']
-        ax.scatter(ref_points[:,0], ref_points[:,1], s=30, facecolors=color, edgecolors=color, label='ILP')
+        ax.scatter(ref_points[:,0], ref_points[:,1], s=50, facecolors="None", edgecolors=color, label='ILP', marker='D')
 
     for s, color, name in zip(solutions, mcolors.TABLEAU_COLORS, names):
         ax.scatter(s['x'], s['y'], s=30, facecolors=color, edgecolors=color, label=name)
@@ -81,6 +83,23 @@ def plot_convergence(configs):
     generation, o1, o2 = parse_file(configs.input[0])
 
     max_gen = max(generation)
+
+    if configs.trim_gen:
+        # Exclude generations after convergence
+        last_gen = generation[-1]
+        idx = generation.index(last_gen)
+        step = len(generation) - idx
+
+        o1_cmp, o2_cmp = set(o1[idx:]), set(o2[idx:])
+        o1_set, o2_set = set(o1[idx-step:idx]), set(o2[idx-step:idx])
+        while o1_set == o1_cmp and o2_set == o2_cmp:
+            idx -= step
+            o1_set, o2_set = set(o1[idx-step:idx]), set(o2[idx-step:idx])
+
+        generation = generation[:idx+step]
+        o1 = o1[:idx+step]
+        o2 = o2[:idx+step]
+
     color = [float(item) for item in generation]
 
     fig, ax = plt.subplots()
@@ -91,13 +110,15 @@ def plot_convergence(configs):
     o1_min, o1_max = min(o1), max(o1)
     o1_ticks = get_recommended_ticks(o1_min, o1_max)
     ax.set_xticks(o1_ticks)
-    #ax.set_xlim(o1_ticks[0], o1_ticks[-1])
+    half_x = (o1_ticks[1] - o1_ticks[0]) / 2
+    ax.set_xlim(o1_ticks[0] - half_x, o1_ticks[-1] + half_x)
 
     # Y axis ticks
     o2_min, o2_max = min(o2), max(o2)
     o2_ticks = get_recommended_ticks(o2_min, o2_max, integer=True)
     ax.set_yticks(o2_ticks)
-    #ax.set_ylim(o2_ticks[0], o2_ticks[-1])
+    half_y = (o2_ticks[1] - o2_ticks[0]) / 2
+    ax.set_ylim(o2_ticks[0] - half_y, o2_ticks[-1] + half_y)
 
     # Title and labels
     plt.xlabel(configs.x_label)
