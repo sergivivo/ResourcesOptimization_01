@@ -1,5 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 
 import random
@@ -233,6 +234,20 @@ class Network:
 
         elabels = nx.get_edge_attributes(self.graph, 'weight')
         nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=elabels)
+
+        # Communities
+        """
+        communities = ntw.getCommunities()
+        partitions = 2
+        gradient = np.linspace(0, 1, partitions + 1)
+        cm_list = set(range(len(self.nodes)))
+        for i in range(partitions):
+            cm_list = next(communities)
+        cmap = mpl.colormaps['viridis']
+        for i in range(partitions+1):
+            lst = list(cm_list[i])
+            nx.draw_networkx_nodes(self.graph, pos, nodelist=lst, node_color=cmap(gradient[i]))
+        """
 
         plt.show()
 
@@ -589,6 +604,8 @@ class Network:
     def checkMemoryRequirements(self):
         return np.sum(self.memory) >= np.sum([t.memory for t in self.tasks])
 
+    def getCommunities(self):
+        return nx.community.girvan_newman(self.graph)
 
 
 if __name__ == '__main__':
@@ -599,71 +616,9 @@ if __name__ == '__main__':
 
     ntw = Network(configs)
 
-    print(ntw.getTaskNodeDistanceMatrix())
-
-    import time
-
-    t0 = time.time()
-    print(ntw.getTasksMinAverageDistanceToUser(), ntw.getTasksMaxAverageDistanceToUser())
-    t1 = time.time()
-    print(t1-t0)
-
-    t0 = time.time()
-    print(ntw.getTasksMinAverageDistanceToUser_v2(), ntw.getTasksMaxAverageDistanceToUser_v2())
-    t1 = time.time()
-    print(t1-t0)
-
-    #print(ntw.getTaskUserAssignmentMatrix())
-    #print(ntw.getUserNodeDistanceMatrix())
-    #print(ntw.getTasksMinAverageDistanceToUser())
-    #print(ntw.getTasksMaxAverageDistanceToUser())
-
-    #matrix = np.zeros((configs.n_tasks, configs.n_nodes), np.uint8)
-    #for row in range(configs.n_tasks):
-    #    col = random.randrange(configs.n_nodes)
-    #    matrix[row, col] = 1
-
-    #tuam = ntw.getTaskUserAssignmentMatrix()
-    #tudm = ntw.getTaskUserDistanceMatrix(matrix, includeAll=False)
-
-    #tua_sum = np.sum(tudm, axis=1) 
-    #tud_sum = np.sum(tuam, axis=1)
-    #tu_filter = (tua_sum != 0) # Filter so that there's no division by zero
-
-
-    #print(tuam)
-    #print(tudm)
-    #print()
-
-    #print(tua_sum)
-    #print(tud_sum)
-    #print()
-
-    #print(tua_sum[tu_filter])
-    #print(tud_sum[tu_filter])
-    #print()
-
-    #avg_row = tua_sum[tu_filter] / tud_sum[tu_filter]
-
-    #print(avg_row)
-    #print()
-    #
-    #print(np.average(avg_row))
-    #print()
-
-    #capacity = ntw.getNodeMemoryArray()
-    #occupied = ntw.getNodeOccupiedMemoryArray(matrix)
-    #print(capacity)
-    #print(occupied)
-    #print()
-    #print(ntw.getNodeAvailableMemoryArray(matrix))
-    #print()
-
-    #print('=====================================')
-    #print('Testing task/user assignment function')
-    #print('=====================================')
-    #print()
-
-    #print(ntw._generateTaskUserAssignmentMatrix_v2())
+    i = 0
+    while True:
+        i += 1
+        ntw.displayGraph(i)
 
 
