@@ -173,12 +173,21 @@ class MyCallback(Callback):
         else:
             self.string_solution = ""
 
-        for o1, o2 in curr_sol:
+        for o in curr_sol:
             if self.save_history:
-                self.string_history += "{} {} {} {}\n".format(
-                        dt_now, algorithm.n_gen, o1, o2)
+                self.string_history += "{} {} ".format(
+                        dt_now, algorithm.n_gen)
+
+                for o_n in o:
+                    self.string_history += "{} ".format(o_n)
+
+                self.string_history += '\n'
+
             else:
-                self.string_solution += "{} {}\n".format(o1, o2)
+                for o_n in o:
+                    self.string_solution += "{} ".format(o_n)
+
+                self.string_solution += '\n'
 
 
 

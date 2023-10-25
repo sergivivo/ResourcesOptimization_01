@@ -36,6 +36,7 @@ REF_POINTS = '[[18., 6.], [15., 8.], [21., 5.]]'
 
 LAMBDA = 0.5 # used for converting bimode to single-mode
 
+OBJ_LIST = ['distance', 'nodes', 'hops']
 
 ALGORITHMS = [
         'NSGA2',

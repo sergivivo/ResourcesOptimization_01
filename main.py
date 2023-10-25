@@ -4,6 +4,7 @@ from solve_problem import solve
 from plot import plot_convergence, plot_scatter_legend
 from arrange import get_pareto_front_from_files
 from analyze import get_table
+from file_utils import solutions_to_string
 
 import random
 import numpy as np
@@ -76,12 +77,9 @@ if __name__ == "__main__":
 
     elif configs.command == 'arrange':
         # Arrange files of solutions and prepare them for ploting
-        array = get_pareto_front_from_files(configs)
+        array = get_pareto_front_from_files(configs, n_obj=configs.n_objectives)
 
-        s = ''
-        for x, y in array:
-            s += '{} {}\n'.format(x,y)
-        s = s[:-1]
+        s = solutions_to_string(array)
 
         if configs.print:
             print(s)

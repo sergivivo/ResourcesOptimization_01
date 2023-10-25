@@ -22,6 +22,7 @@ from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.optimize import minimize
 
 import numpy as np
+import sys
 
 algdict = {
         'NSGA2': NSGA2,
@@ -36,8 +37,10 @@ algdict = {
 
 def solve(ntw, configs):
 
+    o_list = configs.objectives
+
     if configs.algorithm == 'ILP':
-        problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose, o1_max=configs.o1_max, o2_min=configs.o2_min)
+        problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose)
 
         status = problem.solve()
         solution = None
@@ -45,7 +48,6 @@ def solve(ntw, configs):
         while status == 'Optimal':
             solution = problem.getSolutionString()
             o1, o2 = problem.getObjective(0), problem.getObjective(1)
-            print('Current solution:', o1, o2)
             status = problem.solve()
 
         if solution is None:
@@ -65,7 +67,7 @@ def solve(ntw, configs):
             print("ERROR: Chosen algorithm does not support single-mode execution.")
             return None
 
-        problem = Problem01v3(ntw, multimode=not configs.single_mode, l=configs.lmb)
+        problem = Problem01v3(ntw, o_list, multimode=not configs.single_mode, l=configs.lmb)
         termination = get_termination(configs.termination_type, configs.n_gen)
 
         if configs.algorithm == 'NSGA2':

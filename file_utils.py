@@ -1,47 +1,62 @@
 import numpy as np
 
-def parse_file(f):
+def parse_file(f, n_obj=2):
     """
     Three possible formats for the columns:
-        <ts_date> <ts_time> <generation> <o1> <o2>
-        <generation> <o1> <o2>
-        <o1> <o2>
+        <ts_date> <ts_time> <generation> <o1> ... <on>
+        <generation> <o1> ... <on>
+        <o1> ... <on>
     """
     first = f.readline().split()
     columns = len(first)
     lst = first + f.read().split()
     f.close()
 
-    if columns == 2:
+    o = [None] * n_obj
+    if columns == n_obj:
         generation = []
-        o1 = [float(i) for i in lst[::columns]]
-        o2 = [float(i) for i in lst[1::columns]]
-    elif columns >= 3:
+        for i in range(n_obj):
+            o[i] = [float(j) for j in lst[i::columns]]
+    elif columns > n_obj:
         # Ignore timestamps
-        generation = [int(i) for i in lst[columns-3::columns]]
-        o1 = [float(i) for i in lst[columns-2::columns]]
-        o2 = [float(i) for i in lst[columns-1::columns]]
+        first_obj = columns - n_obj
+        generation = [int(i) for i in lst[first_obj-1::columns]]
+        for i in range(n_obj):
+            o[i] = [float(j) for j in lst[first_obj+i::columns]]
     else:
-        generation, o1, o2 = [], [], []
+        generation = []
 
-    return generation, o1, o2
+    return generation, o
 
-def get_solution_array(f):
+def get_solution_array(f, n_obj=2):
     solutions = []
-    generation, o1, o2 = parse_file(f)
+    generation, o = parse_file(f, n_obj)
 
     if len(generation) > 0:
         last_gen = generation[-1]
 
         # To avoid ValueError when calling method index
         generation.append(last_gen+1)
-
+        
+        o_slize = [None] * n_obj
         for g in range(1, last_gen+1):
-            i, j = generation.index(g), generation.index(g+1)
-            o1_slize, o2_slize = o1[i:j], o2[i:j]
-            solutions.append(np.array([o1_slize,o2_slize]).T)
+            try:
+                i, j = generation.index(g), generation.index(g+1)
+                for k in range(n_obj):
+                    o_slize[k] = o[k][i:j]
+                solutions.append(np.array(o_slize).T)
+            except ValueError:
+                solutions.append(np.array([]))
     else:
-        solutions.append(np.array(o1, o2).T)
+        solutions.append(np.array(o).T)
 
     return solutions
+
+def solutions_to_string(solutions):
+    s = ''
+    for o in solutions:
+        for o_n in o:
+            s += "{} ".format(o_n)
+        s += '\n'
+    return s
 

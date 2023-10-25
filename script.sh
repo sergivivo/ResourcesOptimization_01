@@ -22,8 +22,8 @@ USERS=20
 #echo "DONE"
 
 
-POP_SIZE=500
-N_GEN=200
+POP_SIZE=100
+N_GEN=500
 MUTATION_PROB=0.1
 ALGORITHM='RNSGA2'
 N_PARTITIONS=16
@@ -31,40 +31,43 @@ N_PARTITIONS=16
 PREFIX="data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB"
 
 echo "PROBLEM SOLVING"
-for MUTATION_PROB in $(LANG=en_US seq 0.1 0.2 1.0); do
+for MUTATION_PROB in $(LANG=en_US seq 0.1 0.2 0.2); do
 
-for NODES in $(seq 20 20 40); do
-for TASKS in $(seq 20 20 $((NODES*2))); do
-for USERS in $(seq 10 20 $NODES); do
+for NODES in $(seq 20 20 20); do
+for TASKS in $(seq 40 20 $((NODES*2))); do
+for USERS in $(seq 20 20 $NODES); do
 echo "  $NODES:$TASKS:$USERS"
 
 mkdir -p "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS"
 
-for ALGORITHM in 'NSGA2'; do
-	echo "    $ALGORITHM"
-	for SEED2 in {1..4}; do
-		echo "      Execution $SEED2"
-		python3 main.py --seed $SEED2 solve \
-			-i "data/network/ntw_"$SEED"_"$NODES"-"$TASKS"-"$USERS \
-			--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB --save_history \
-			--algorithm $ALGORITHM \
-			-o "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN &
-
-		pids[${SEED2}]=$!
-	done
-
-	for pid in ${pids[*]}; do
-		wait $pid
-	done
-
-	python3 main.py arrange \
-		-i "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-1_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		   "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-2_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		   "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-3_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		   "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-4_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		-o "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN
-	echo "    DONE"
-done
+#for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
+#	echo "    $ALGORITHM"
+#	for SEED2 in {1..4}; do
+#		echo "      Execution $SEED2"
+#		python3 main.py --seed $SEED2 solve \
+#			-i "data/network/ntw_"$SEED"_"$NODES"-"$TASKS"-"$USERS \
+#			--objectives 'distance' 'nodes' 'hops' \
+#			--pop_size $POP_SIZE --n_gen $N_GEN --mutation_prob $MUTATION_PROB --save_history \
+#			--algorithm $ALGORITHM \
+#			-v \
+#			-o "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN &
+#
+#		pids[${SEED2}]=$!
+#	done
+#
+#	for pid in ${pids[*]}; do
+#		wait $pid
+#	done
+#
+#	python3 main.py arrange \
+#		--n_objectives 3 \
+#		-i "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-1_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#		   "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-2_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#		   "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-3_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#		   "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-4_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#		-o "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN
+#	echo "    DONE"
+#done
 
 done
 done
@@ -75,13 +78,14 @@ done
 
 
 #for MUTATION_PROB in $(LANG=en_US seq 0.1 0.2 0.2); do
-#for NODES in $(seq 20 20 40); do
-#for TASKS in $(seq 20 20 $((NODES*2))); do
+#for NODES in $(seq 20 20 20); do
+#for TASKS in $(seq 40 20 $((NODES*2))); do
 #for USERS in $(seq 20 20 $NODES); do
 #
-#for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
+#for ALGORITHM in 'NSGA2'; do # 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
 #	for SEED2 in {1..4}; do
 #		python3 main.py --seed $SEED plot \
+#			--n_objectives 3 \
 #			-i "data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
 #			--history \
 #			--title "Objective space - Convergence ($ALGORITHM) - $NODES:$TASKS:$USERS" \
@@ -97,12 +101,13 @@ done
 #done
 
 
-for NODES in $(seq 20 20 40); do
-for TASKS in $(seq 20 20 $((NODES*2))); do
-for USERS in $(seq 10 20 $NODES); do
+for NODES in $(seq 20 20 20); do
+for TASKS in $(seq 40 20 $((NODES*2))); do
+for USERS in $(seq 20 20 $NODES); do
 
 #for ALGORITHM in 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA'; do
 #python3 main.py --seed $SEED plot \
+#	--n_objectives 2 \
 #	-i  \
 #	   "$PREFIX/$NODES-$TASKS-$USERS/"$ALGORITHM"_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
 #	--ref_points $(cat "$PREFIX/$NODES-$TASKS-$USERS/ref_points/rp_ILP_"$SEED"-1") \
@@ -115,24 +120,37 @@ for USERS in $(seq 10 20 $NODES); do
 #done
 
 python3 main.py --seed $SEED plot \
-	-i "$PREFIX/$NODES-$TASKS-$USERS/NSGA2_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-	   "$PREFIX/$NODES-$TASKS-$USERS/NSGA3_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-	   "$PREFIX/$NODES-$TASKS-$USERS/UNSGA3_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-	   "$PREFIX/$NODES-$TASKS-$USERS/CTAEA_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-	   "$PREFIX/$NODES-$TASKS-$USERS/SMSEMOA_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-	   "$PREFIX/$NODES-$TASKS-$USERS/RVEA_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-	--ref_points $(cat "$PREFIX/$NODES-$TASKS-$USERS/ref_points/rp_ILP_"$SEED"-1") \
+	--n_objectives 3 \
+	-i "$PREFIX/$NODES-$TASKS-$USERS/NSGA2_"$SEED"-1_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+	   "$PREFIX/$NODES-$TASKS-$USERS/SMSEMOA_"$SEED"-1_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
 	--comparison \
 	--legend NSGA2 \
-		 NSGA3 \
-		 UNSGA3 \
-		 CTAEA \
 		 SMSEMOA \
-		 RVEA \
 	--title "Objective space - Comparison between algorithms - $NODES:$TASKS:$USERS" \
 	--x_label "Mean latency between users/services" \
 	--y_label "Occupied nodes" \
-	--output "data/plot/all_"$SEED"_$NODES-$TASKS-$USERS.png"
+	--z_label "Mean hops between users/services"
+
+#python3 main.py --seed $SEED plot \
+#	--n_objectives 3 \
+#	-i "$PREFIX/$NODES-$TASKS-$USERS/NSGA2_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#	   "$PREFIX/$NODES-$TASKS-$USERS/NSGA3_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#	   "$PREFIX/$NODES-$TASKS-$USERS/UNSGA3_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#	   "$PREFIX/$NODES-$TASKS-$USERS/CTAEA_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#	   "$PREFIX/$NODES-$TASKS-$USERS/SMSEMOA_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#	   "$PREFIX/$NODES-$TASKS-$USERS/RVEA_"$SEED"-A_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
+#	--ref_points $(cat "$PREFIX/$NODES-$TASKS-$USERS/ref_points/rp_ILP_"$SEED"-1") \
+#	--comparison \
+#	--legend NSGA2 \
+#		 NSGA3 \
+#		 UNSGA3 \
+#		 CTAEA \
+#		 SMSEMOA \
+#		 RVEA \
+#	--title "Objective space - Comparison between algorithms - $NODES:$TASKS:$USERS" \
+#	--x_label "Mean latency between users/services" \
+#	--y_label "Occupied nodes" \
+#	--output "data/plot/all_"$SEED"_$NODES-$TASKS-$USERS.png"
 
 done
 done

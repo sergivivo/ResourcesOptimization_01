@@ -354,6 +354,37 @@ class Network:
     def getTasksMaxAverageDistanceToUser_v2(self, undm=None, tuam=None):
         return np.average(np.max(self.getTaskNodeDistanceMatrix(undm, tuam), axis=1))
 
+    def getTasksAverageHopsToUser(self, matrix, unhm=None, tuam=None, maximize=False):
+        """
+        Returns a float with the average hops of all services to
+        their respective users.
+
+        Acronyms:
+        - tnam: task/node assignment matrix
+        - unhm: user/node hops matrix
+        - tuam: task/user assignment matrix
+        - tuhm: task/user hops matrix
+
+        Matrices tuam and unhm can be passed by parameter for efficiency
+        purposes.
+        """
+        if tuam is None: tuam = self.getTaskUserAssignmentMatrix()
+        tuhm = self.getTaskUserHopsMatrix(
+                matrix, unhm=unhm, tuam=tuam, includeAll=False, maximize=maximize)
+
+        tua_sum = np.sum(tuhm, axis=1) 
+        tuh_sum = np.sum(tuam, axis=1)
+        tu_filter = (tua_sum != 0) # Filter so that there's no division by zero
+
+        avg_row = tua_sum[tu_filter] / tuh_sum[tu_filter]
+        return np.average(avg_row)
+
+    def getTasksMinAverageHopsToUser(self, unhm=None, tuam=None):
+        return np.average(np.min(self.getTaskNodeHopsMatrix(unhm, tuam), axis=1))
+
+    def getTasksMaxAverageHopsToUser(self, unhm=None, tuam=None):
+        return np.average(np.max(self.getTaskNodeDistanceMatrix(unhm, tuam), axis=1))
+
     def getBetweennessCentrality(self):
         return nx.betweenness_centrality(
                 self.graph.subgraph(range(len(self.nodes))),
@@ -446,6 +477,28 @@ class Network:
                 tasks[tid] += un_dist_m[tu_nonzeros[1][uid], tn_nonzeros[1][i]]
 
         return tasks
+    
+    def getTaskHopsArray(self, m):
+        """Returns hops of tasks to their respective users given a
+        task/node assignment matrix"""
+        tu_assign_m = self.getTaskUserAssignmentMatrix()
+        un_hops_m   = self.getUserNodeHopsMatrix()
+
+        # Find ones of task/node matrix
+        tn_nonzeros = np.nonzero(m)
+
+        # Find ones of task/user matrix
+        tu_nonzeros = np.nonzero(tu_assign_m)
+
+        tasks = np.zeros(len(self.tasks), np.float64)
+        for i in range(len(tn_nonzeros[0])):
+            tid = tn_nonzeros[0][i]
+            x = np.where(tu_nonzeros[0] == tid)
+            for uid in x:
+                # this for is needed when a task is assigned to more than one user
+                tasks[tid] += un_hops_m[tu_nonzeros[1][uid], tn_nonzeros[1][i]]
+
+        return tasks
 
     # NumPy matrices
     def getTaskUserAssignmentMatrix(self):
@@ -475,6 +528,20 @@ class Network:
             for nid in range(len(self.nodes)):
                 distances[uid, nid] = dct[nid]
         return distances
+    
+    def getUserNodeHopsMatrix(self):
+        """Get the number of hops from the users (rows) to the server nodes
+        (columns) using Dijkstra's algorithm."""
+        hops = np.empty((len(self.users), len(self.nodes)), dtype=np.uint16)
+        for uid in range(len(self.users)):
+            i = 0
+            dct_iter = nx.bfs_layers(self.graph, uid + len(self.nodes))
+            for dct in dct_iter:
+                for nid in dct:
+                    if nid < len(self.nodes):
+                        hops[uid, nid] = i
+                i += 1
+        return hops
     
     def getTaskUserDistanceMatrix(self, tnam, undm=None, tuam=None, includeAll=True, maximize=False):
         """Get the distance matrix from the tasks (rows) to the users
@@ -527,6 +594,57 @@ class Network:
 
         return tudm
 
+    def getTaskUserHopsMatrix(self, tnam, unhm=None, tuam=None, includeAll=True, maximize=False):
+        """Get the hops matrix from the tasks (rows) to the users
+        (columns) given a task/node assignment matrix
+
+        Acronyms:
+        - tnam: task/node assignment matrix
+        - unhm: user/node hops matrix
+        - tuam: task/user assignment matrix
+        - tuhm: task/user hops matrix
+
+        Parameter 'includeAll' means include unassigned task/user hops.
+        If set to false, each unassigned element will contain a zero. Useful
+        for calculating averages by adding elements by columns or rows.
+
+        Parameter 'maximize', for multinode assignment, will take the node with
+        the requested service that is further away from the user instead of the
+        closer node. Useful for normalization.
+
+        Matrices unhm and tuam can be passed by parameter for efficiency
+        purposes.
+        """
+
+        if unhm is None: unhm = self.getUserNodeHopsMatrix()
+
+        if not includeAll and tuam is None:
+            # In order to know which to inclue or exclude (m[row,col] == 1)
+            tuam = self.getTaskUserAssignmentMatrix()
+
+        tuhm = np.zeros((len(self.tasks), len(self.users)), np.float64)
+
+        # Get tasks' and nodes' indexes of nonzero values in matrix
+        tn_nonzeros = np.nonzero(tnam)
+
+        for uid in range(len(self.users)):
+            for i in range(len(tn_nonzeros[0])):
+                tid = tn_nonzeros[0][i]
+                nid = tn_nonzeros[1][i]
+                if includeAll or tuam[tid, uid] == 1:
+                    if not maximize:
+                        # Will take the minimum value
+                        if tuhm[tid, uid] == 0:
+                            tuhm[tid, uid] = unhm[uid, nid]
+                        elif unhm[uid, nid] < tuhm[tid, uid]: 
+                            tuhm[tid, uid] = unhm[uid, nid]
+                    elif unhm[uid, nid] > tuhm[tid, uid]: 
+                        # Will take the maximum value
+                        tuhm[tid, uid] = unhm[uid, nid]
+
+
+        return tuhm
+
     def getTaskNodeAssignmentMatrix(self, array=None):
         """Get the matrix of the amount of instances of each task (rows) on each
         server node (columns) given an array of integers"""
@@ -560,6 +678,23 @@ class Network:
 
         return tndm
 
+    def getTaskNodeHopsMatrix(self, unhm=None, tuam=None):
+        """Get the matrix of the average hops that a service can have to
+        the users that requests it depending on the node that it is assigned"""
+        if unhm is None: unhm = self.getUserNodeHopsMatrix()
+        if tuam is None: tuam = self.getTaskUserAssignmentMatrix()
+
+        tua_sum = np.sum(tuam, axis=1)
+        tnhm = np.zeros((len(self.tasks), len(self.nodes)))
+
+        for t in range(len(self.tasks)):
+            for n in range(len(self.nodes)):
+                tnh_sum = 0
+                for u in range(len(self.users)):
+                    tnh_sum += tuam[t][u] * unhm[u][n]
+                tnhm[t][n] = tnh_sum / tua_sum[t]
+
+        return tnhm
 
     def getTaskNodeMemoryMatrix(self, m=None):
         """Returns a task/node memory matrix given a task/node assignment matrix"""
@@ -616,9 +751,21 @@ if __name__ == '__main__':
 
     ntw = Network(configs)
 
+    matrix = np.zeros((configs.n_tasks, configs.n_nodes), dtype=np.uint8)
+    for row in matrix:
+        row[random.randrange(configs.n_nodes)] = 1
+
+    print(ntw.getUserNodeHopsMatrix())
+    print(ntw.getTaskUserAssignmentMatrix())
+    print(matrix)
+    print(ntw.getTaskNodeHopsMatrix())
+    print(ntw.getTaskUserHopsMatrix(matrix))
+    print(ntw.getTasksAverageHopsToUser(matrix))
+
     i = 0
     while True:
         i += 1
         ntw.displayGraph(i)
+
 
 

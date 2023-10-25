@@ -59,6 +59,7 @@ parser_generate.add_argument('-o', '--output', type=argparse.FileType('wb'), hel
 parser_solve = subparsers.add_parser('solve', help='Solve optimization problem')
 
 parser_solve.add_argument('-i', '--input', type=argparse.FileType('rb'), help='Input file path used for generating the network')
+parser_solve.add_argument('--objectives', type=str, nargs='+', default=['distance','nodes'], help='Objectives to use in the algorithm')
 
 parser_solve.add_argument('--pop_size', type=int, default=POP_SIZE, help='Population size')
 parser_solve.add_argument('--algorithm', type=str, choices=ALGORITHMS, default=ALGORITHM, help='Name of the algorithm to be used to solve the problem')
@@ -96,6 +97,8 @@ parser_arrange.add_argument('-i', '--input', nargs='+', type=argparse.FileType('
 parser_arrange.add_argument('--print', action='store_true', help='Print on console the resulting arrangement')
 parser_arrange.add_argument('-o', '--output', type=argparse.FileType('w'), help='Output file path used for storing the arranged solution data')
 
+parser_arrange.add_argument('--n_objectives', type=int, default=2, help='Number of objectives within the solution file.')
+
 
 
 
@@ -109,6 +112,7 @@ parser_analyze.add_argument('--alg_names', nargs='+', type=str, help='Algorithm 
 parser_analyze.add_argument('--gen_step', type=int, default=0, help='Generation step used for printing the evolution of each indicator')
 
 parser_analyze.add_argument('--network', type=argparse.FileType('rb'), help='Input file path used for retrieving the network, useful for calculating several needed parameters, like O1 and O2 max values')
+parser_analyze.add_argument('--n_objectives', type=int, default=2, help='Number of objectives within the solution file.')
 
 parser_analyze.add_argument('--print', action='store_true', help='Print on console the table')
 parser_analyze.add_argument('-o', '--output', type=argparse.FileType('w'), help='Output file path used for saving generated table')
@@ -120,6 +124,8 @@ parser_plot = subparsers.add_parser('plot', help='Plot the resulting data from t
 parser_plot.add_argument('-i', '--input', nargs='+', type=argparse.FileType('r'), help='List of input file paths used for plotting the solutions')
 parser_plot.add_argument('--ref_points', type=type_point_list, default=None, help='Specific parameter for plotting reference points')
 
+parser_plot.add_argument('--n_objectives', type=int, default=2, help='Number of objectives within the solution file.')
+
 parser_plot.add_argument('--history', action='store_true', help='Plot a single solution including the history representing the evolution with the form of a scatter plot')
 parser_plot.add_argument('--trim_gen', action='store_true', help='Plots generations until convergence')
 
@@ -130,6 +136,7 @@ parser_plot.add_argument('--legend', nargs='*', type=str, help='List of names fo
 parser_plot.add_argument('--title', type=str, default='', help='Title of the plot')
 parser_plot.add_argument('--x_label', type=str, default='', help='Label for X axis')
 parser_plot.add_argument('--y_label', type=str, default='', help='Label for Y axis')
+parser_plot.add_argument('--z_label', type=str, default='', help='Label for Z axis')
 
 parser_plot.add_argument('-o', '--output', type=argparse.FileType('wb'), help='Output file path used for saving plot result')
 

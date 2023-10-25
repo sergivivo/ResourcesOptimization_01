@@ -1,6 +1,7 @@
 from pymoo.core.problem   import Problem, ElementwiseProblem
 
 from problem_tools import MySampling, MyCrossover, MyRepair, MyMutation, MyDuplicateElimination, MyCallback
+from default import OBJ_LIST
 
 from pymoo.termination import get_termination
 from pymoo.algorithms.moo.nsga2  import NSGA2
@@ -151,7 +152,7 @@ class Problem01v3(ElementwiseProblem):
     Mutation propias para la generación de matrices de NumPy.
     """
 
-    def __init__(self, network, multimode=True, l=0.5):
+    def __init__(self, network, obj_list=OBJ_LIST[:2], multimode=True, l=0.5):
 
         self.network = network
 
@@ -160,35 +161,84 @@ class Problem01v3(ElementwiseProblem):
         self.N_NODES = network.getNNodes()
 
         self.multimode = multimode
-        self.l = l # lambda for converting bidimensional to single
+        if type(l) == list:
+            # lambda for converting bidimensional to single
+            l = l[:len(obj_list)]
+            if sum(l) > 1.:
+                self.l = [l_elem / sum(l) for l_elem in l]
+
+            if len(l) == len(obj_list):
+                self.l = l
+            else:
+                self.l = l + [1.-sum(l)] + [0.] * (len(obj_list)-len(l)-1)
+        else:
+            if l > 1.:
+                l = 1.
+
+            if   len(obj_list) == 1:
+                self.l = [l]
+            elif len(obj_list) > 1:
+                self.l = [l, 1.-l] + [0.] * (len(obj_list)-2)
 
         # Save for efficiency purposes
         self.undm = network.getUserNodeDistanceMatrix()
+        self.unhm = network.getUserNodeHopsMatrix()
         self.tuam = network.getTaskUserAssignmentMatrix()
 
         # Values needed for normalization
-        self.f1_min = network.getTasksMinAverageDistanceToUser_v2(undm=self.undm, tuam=self.tuam)
-        self.f1_max = network.getTasksMaxAverageDistanceToUser_v2(undm=self.undm, tuam=self.tuam)
-        self.f2_min = network.getMinimumNNodesNeeded()
-        self.f2_max = self.N_NODES
+        self.obj_list = obj_list
+        self.f_min_list = []
+        self.f_max_list = []
+        for obj in obj_list:
+            if   obj == OBJ_LIST[0]:
+                self.f_min_list.append(
+                        network.getTasksMinAverageDistanceToUser_v2(
+                                undm=self.undm, tuam=self.tuam))
+                self.f_max_list.append(
+                        network.getTasksMaxAverageDistanceToUser_v2(
+                                undm=self.undm, tuam=self.tuam))
 
-        if self.f2_min == self.f2_max:
-            self.f2_max += 1 
-            # This way, we avoid dividing by 0 and enforce 0 as normalized O2
-            # value, so it does not interfere with O1 in any way
+            elif obj == OBJ_LIST[1]:
+                self.f_min_list.append(network.getMinimumNNodesNeeded())
+                self.f_max_list.append(self.N_NODES)
+
+            elif obj == OBJ_LIST[2]:
+                self.f_min_list.append(
+                        network.getTasksMinAverageHopsToUser(
+                                unhm=self.unhm, tuam=self.tuam))
+                self.f_max_list.append(
+                        network.getTasksMaxAverageHopsToUser(
+                                unhm=self.unhm, tuam=self.tuam))
+
+            if self.f_min_list[-1] == self.f_max_list[-1]:
+                self.f_max_list += 1
+                # This way, we avoid dividing by 0 and enforce 0 as normalized O2
+                # value, so it does not interfere with O1 in any way
 
         super().__init__(
                 n_var = 1,
-                n_obj = 2 if multimode else 1,
+                n_obj = len(self.obj_list) if multimode else 1,
                 n_ieq_constr = 1)
-
 
     def _evaluate(self, x, out, *args, **kwargs):
         matrix = x[0]
 
-        f1 = self.network.getTasksAverageDistanceToUser(
-                matrix, tuam=self.tuam, undm=self.undm) 
-        f2 = np.count_nonzero(np.max(matrix, axis=0))
+        f_original = []
+        f_norm = []
+        for obj, f_min, f_max in zip(self.obj_list, self.f_min_list, self.f_max_list):
+            if   obj == OBJ_LIST[0]:
+                f = self.network.getTasksAverageDistanceToUser(
+                        matrix, tuam=self.tuam, undm=self.undm)
+
+            elif obj == OBJ_LIST[1]:
+                f = np.count_nonzero(np.max(matrix, axis=0))
+
+            elif obj == OBJ_LIST[2]:
+                f = self.network.getTasksAverageHopsToUser(
+                                matrix, tuam=self.tuam, unhm=self.unhm)
+            
+            f_original.append(f)
+            f_norm.append((f - f_min) / (f_max - f_min))
 
         assigned_memory_v = np.sum(self.network.getTaskNodeMemoryMatrix(matrix), axis=0)
         g1 = np.max(assigned_memory_v - self.network.getNodeMemoryArray())
@@ -196,15 +246,12 @@ class Problem01v3(ElementwiseProblem):
         # Dicho de otro modo, al restar la memoria ocupada con la capacidad,
         # debe ser menor o igual a cero
 
-        f1_norm = (f1 - self.f1_min) / (self.f1_max - self.f1_min)
-        f2_norm = (f2 - self.f2_min) / (self.f2_max - self.f2_min)
-        
         if self.multimode:
-            out['F'] = [f1_norm, f2_norm]
-            out['F_original'] = [f1, f2]
+            out['F'] = f_norm
+            out['F_original'] = f_original
         else:
-            out['F'] = [self.l * f1_norm + (1 - self.l) * f2_norm]
-            out['F_original'] = [f1, f2]
+            out['F'] = sum([l*f for l, f in zip(self.l, self.f_norm)])
+            out['F_original'] = f_original
 
         out['G'] = [g1]
 
