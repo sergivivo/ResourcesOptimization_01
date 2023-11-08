@@ -24,6 +24,7 @@ def gnp_random_connected_graph_weighted(n, p, minw=0., maxw=1., roundw=1):
     return G
 
 def barabasi_albert_weighted_graph(n, m, seed=None, minw=0., maxw=1., roundw=1):
+    # TODO: generar layout y utilizarlo para calcular distancias y generar comunidades
     G = nx.barabasi_albert_graph(seed=seed, n=n, m=m)
     for orig, dest in G.edges():
         G[orig][dest]['weight'] = round(random.uniform(minw, maxw), roundw)

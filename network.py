@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+from tree import TreeNode
 
 import random
 
@@ -25,6 +26,7 @@ class Network:
         self.graph = barabasi_albert_weighted_graph(seed=conf.seed, n=conf.n_nodes, m=conf.edges, maxw=conf.max_weight, minw=conf.min_weight)
 
         # Betweenness centrality
+        # TODO: Añadir weight='weight'
         btw_cnt = nx.betweenness_centrality(self.graph, seed=conf.seed)
         # https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
         bc_sorted = sorted(btw_cnt.items(), reverse=True, key=lambda e: e[1])
@@ -70,7 +72,42 @@ class Network:
         # Generate the user access to each service. A user can access many
         # services and a service can be accessed by many users, so the resulting
         # datastructure is a set of pairs of tasks/users.
-        tu_matrix = self._generateTaskUserAssignmentMatrix_v2(p=conf.probability)
+        if conf.communities:
+            """    
+            Given N_NODES = 32 and GROUP_SIZE = 4:
+
+                           Tree:       Partitions:
+
+                            32           
+                          /    \            1 +
+                       16        16
+                      /  \      /  \        2 +
+                     8    8    8    8
+                    / \  / \  / \  / \      4 +
+                    4 4  4 4  4 4  4 4
+
+                n := "Depth of tree" = log2(N_NODES/GROUP_SIZE)
+
+                  -> 2^0 + 2^1 + ... + 2^(n-1) = (2^n)-1
+
+                partitions = (2^log2(N_NODES/GROUP_SIZE))-1 = (N_NODES/GROUP_SIZE)-1
+
+            """
+            partitions = int(np.floor(conf.n_nodes/conf.group_size)) - 1
+            self.tree = self._getCommunityTree(partitions)
+
+            tu_prob_matrix = self._getTaskUserRequestProbabilityMatrix(
+                    popularity=conf.popularity, spreadness=conf.spreadness)
+
+            tu_matrix = np.zeros((conf.n_tasks, conf.n_users), dtype=np.uint8)
+            for tid in range(conf.n_tasks):
+                for uid in range(conf.n_users):
+                    if random.random() < tu_prob_matrix[tid,uid]:
+                        tu_matrix[tid,uid] = 1
+
+        else:
+            tu_matrix = self._generateTaskUserAssignmentMatrix_v2(p=conf.probability)
+
         self.task_user = np.transpose(np.nonzero(tu_matrix))
 
     def _addUsers(self, minw=0., maxw=1., roundw=1):
@@ -87,7 +124,7 @@ class Network:
         maxv = max(bc.values())
         bc_prob = [(k, (maxv - v)/(maxv*n_nodes - maxv)) for (k, v) in bc.items()]
 
-        for uid in range(n_nodes, n_nodes + n_users):
+        for uid in range(n_users):
             # Get node's id given a random float
             acc_prob = 0
             p = random.random()
@@ -98,8 +135,10 @@ class Network:
 
             nid = bc_prob[i][0]
 
-            self.graph.add_node(uid)
-            self.graph.add_edge(uid, nid, weight=round(random.uniform(minw, maxw), roundw))
+            self.graph.add_node(n_nodes + uid)
+            self.graph.add_edge(n_nodes + uid, nid,
+                    weight=round(random.uniform(minw, maxw), roundw))
+            self.users[uid].node_id = nid
 
     def _generateTaskUserAssignmentMatrix_v1(self):
         """
@@ -179,26 +218,14 @@ class Network:
         """
         # Eye matrix
         n, m = len(self.tasks), len(self.users)
-        tu_matrix = np.eye(n, m, dtype=np.uint8)
+        tu_matrix = self._generateTaskUserMinimalAssignmentMatrix() # Steps 1-3
 
         if n >= m:
-            # Set ones randomly remaining rows
-            for i in range(m, n):
-                tu_matrix[i, random.randrange(m)] = 1
-
-            # Shuffle rows
-            np.random.shuffle(tu_matrix)
             if m == 1:
                 return tu_matrix
             p_c = (m*p-1)/(m-1)
 
         else:
-            # Set ones randomly remaining columns
-            for i in range(n, m):
-                tu_matrix[random.randrange(n), i] = 1
-
-            # Shuffle columns
-            np.random.shuffle(tu_matrix.T)
             if n == 1:
                 return tu_matrix
             p_c = (n*p-1)/(n-1)
@@ -211,6 +238,109 @@ class Network:
                         tu_matrix[i,j] = 1
 
         return tu_matrix
+    
+    def _generateTaskUserMinimalAssignmentMatrix(self):
+        """ Steps 1-3 done """
+        # Eye matrix
+        n, m = len(self.tasks), len(self.users)
+        tu_matrix = np.eye(n, m, dtype=np.uint8)
+
+        if n >= m:
+            # Set ones randomly remaining rows
+            for i in range(m, n):
+                tu_matrix[i, random.randrange(m)] = 1
+
+            # Shuffle rows
+            np.random.shuffle(tu_matrix)
+
+        else:
+            # Set ones randomly remaining columns
+            for i in range(n, m):
+                tu_matrix[random.randrange(n), i] = 1
+
+            # Shuffle columns
+            np.random.shuffle(tu_matrix.T)
+
+        return tu_matrix
+
+    def _getCommunityTree(self, partitions):
+        tree = TreeNode()
+        root_data = frozenset(range(len(self.nodes)))
+        tree.data = root_data
+
+        prev_set = {root_data}
+        communities = self.getCommunities()
+        for i in range(partitions):
+            next_set = set([frozenset(e) for e in next(communities)])
+
+            chosen = prev_set.difference(next_set).pop()
+            splitted = next_set.difference(prev_set)
+            left = splitted.pop()
+            right = splitted.pop()
+
+            leaf = tree.findLeafByTuple(chosen)
+            leaf.left  = TreeNode()
+            leaf.right = TreeNode()
+            leaf.left.data  = left
+            leaf.right.data = right
+            leaf.left.depth  = leaf.depth + 1
+            leaf.right.depth = leaf.depth + 1
+            leaf.left.parent  = leaf
+            leaf.right.parent = leaf
+            
+            prev_set = next_set
+
+        return tree
+
+    def _getTaskUserRequestProbabilityMatrix(self, popularity, spreadness):
+        """Based on communities"""
+
+        # nid mapping to TreeNode object
+        n_nodes = [
+                self.tree.findLeafByElement(nid)
+                for nid in range(len(self.nodes))
+            ]
+
+        u_nids = [user.node_id for user in self.users]
+
+        # Minimum matrix to find "mandatory" task/user assignment
+        tu_matrix_min = self._generateTaskUserMinimalAssignmentMatrix()
+
+        #                  min(
+        # task -> uid_1 ->   depth1
+        #      -> ...   ->   ...
+        #      -> uid_n ->   depth2
+        #                  )
+        t_nids = [
+                min([u_nids[uid] for uid in np.flatnonzero(row)],
+                        key=lambda nid: n_nodes[nid].depth)
+                for row in tu_matrix_min
+            ]
+
+        # TODO: Hacerlo configurable. Distribuir no de manera uniforme,
+        # porque hay más servicios globales que regionales
+        t_depths = [
+                random.randint(0, n_nodes[nid].depth)
+                for nid in t_nids
+            ]
+
+        tu_prob_matrix = np.zeros((len(self.tasks), len(self.users)))
+        for tid in range(len(self.tasks)):
+            for uid in range(len(self.users)):
+                t_nid = t_nids[tid]
+                u_nid = u_nids[uid]
+                t_depth = t_depths[tid]
+
+                t_node = self.tree.findNodeByDepthAndElement(t_depth, t_nid)
+                u_node = n_nodes[u_nid]
+
+                # Get common node and depth
+                common_node = self.tree.findCommonAncestorByNode(t_node, u_node)
+                c_depth = common_node.depth
+
+                tu_prob_matrix[tid,uid] = popularity * spreadness ** (t_depth - c_depth)
+        
+        return tu_prob_matrix
 
 
     def displayGraph(self, seed=1):
@@ -383,7 +513,7 @@ class Network:
         return np.average(np.min(self.getTaskNodeHopsMatrix(unhm, tuam), axis=1))
 
     def getTasksMaxAverageHopsToUser(self, unhm=None, tuam=None):
-        return np.average(np.max(self.getTaskNodeDistanceMatrix(unhm, tuam), axis=1))
+        return np.average(np.max(self.getTaskNodeHopsMatrix(unhm, tuam), axis=1))
 
     def getBetweennessCentrality(self):
         return nx.betweenness_centrality(
@@ -417,6 +547,10 @@ class Network:
     def getNodeExecutingTasks(self, node_id):
         """Get the list of tasks assigned to a server node."""
         return [t for t in self.tasks if t.node_id == node_id]
+
+    # Dictionaries
+    def getEdgeWeightDictionary(self):
+        return nx.get_edge_attributes(self.graph, 'weight')
 
     # NumPy 1D arrays
     def getTaskUserAssignmentArray(self):
@@ -740,8 +874,9 @@ class Network:
         return np.sum(self.memory) >= np.sum([t.memory for t in self.tasks])
 
     def getCommunities(self):
-        return nx.community.girvan_newman(self.graph)
-
+        # TODO: Probar otros (proximidad geográfica, latencia, etc.)
+        return nx.community.girvan_newman(
+                self.graph.subgraph([i for i in range(len(self.nodes))]))
 
 if __name__ == '__main__':
     # Use 'generate' subparser for testing
@@ -750,22 +885,4 @@ if __name__ == '__main__':
     random.seed(configs.seed)
 
     ntw = Network(configs)
-
-    matrix = np.zeros((configs.n_tasks, configs.n_nodes), dtype=np.uint8)
-    for row in matrix:
-        row[random.randrange(configs.n_nodes)] = 1
-
-    print(ntw.getUserNodeHopsMatrix())
-    print(ntw.getTaskUserAssignmentMatrix())
-    print(matrix)
-    print(ntw.getTaskNodeHopsMatrix())
-    print(ntw.getTaskUserHopsMatrix(matrix))
-    print(ntw.getTasksAverageHopsToUser(matrix))
-
-    i = 0
-    while True:
-        i += 1
-        ntw.displayGraph(i)
-
-
 

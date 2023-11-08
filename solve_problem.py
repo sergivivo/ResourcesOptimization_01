@@ -39,8 +39,31 @@ def solve(ntw, configs):
 
     o_list = configs.objectives
 
+    my_sampling = MySampling(
+            n_replicas = configs.n_replicas
+        )
+    
+    my_crossover = MyCrossover()
+
+    my_repair = MyRepair(
+            n_replicas = configs.n_replicas
+        )
+
+    my_mutation = MyMutation(
+            p_move     = configs.mutation_prob_move,
+            p_change   = configs.mutation_prob_change,
+            n_replicas = configs.n_replicas
+        )
+
+    my_callback = MyCallback(
+            save_history=configs.save_history
+        )
+
+    my_duplicate_elimination = MyDuplicateElimination()
+
+
     if configs.algorithm == 'ILP':
-        problem = ProblemILP(ntw, l=configs.lmb, verbose=configs.verbose)
+        problem = ProblemILP(ntw, n_replicas=configs.n_replicas, l=configs.lmb, verbose=configs.verbose)
 
         status = problem.solve()
         solution = None
@@ -73,22 +96,22 @@ def solve(ntw, configs):
         if configs.algorithm == 'NSGA2':
             algorithm = NSGA2(
                     pop_size = configs.pop_size,
-                    sampling = MySampling(),
-                    crossover = MyCrossover(),
-                    mutation = MyMutation(configs.mutation_prob),
-                    repair = MyRepair(),
-                    callback = MyCallback(save_history=configs.save_history),
-                    eliminate_duplicates = MyDuplicateElimination()
+                    sampling = my_sampling,
+                    crossover = my_crossover,
+                    mutation = my_mutation,
+                    repair = my_repair,
+                    callback = my_callback,
+                    eliminate_duplicates = my_duplicate_elimination
                 )
 
         elif configs.algorithm == 'SMSEMOA':
             algorithm = SMSEMOA(
-                    sampling=MySampling(),
-                    crossover=MyCrossover(),
-                    mutation=MyMutation(configs.mutation_prob),
-                    repair=MyRepair(),
-                    callback = MyCallback(save_history=configs.save_history),
-                    eliminate_duplicates=MyDuplicateElimination()
+                    sampling=my_sampling,
+                    crossover=my_crossover,
+                    mutation=my_mutation,
+                    repair=my_repair,
+                    callback = my_callback,
+                    eliminate_duplicates=my_duplicate_elimination
                 )
 
         elif configs.algorithm in ('RNSGA2', 'RNSGA3'):
@@ -99,23 +122,23 @@ def solve(ntw, configs):
                 algorithm = RNSGA2(
                         pop_size = configs.pop_size,
                         ref_points = ref_points,
-                        sampling = MySampling(),
-                        crossover = MyCrossover(),
-                        mutation = MyMutation(configs.mutation_prob),
-                        repair = MyRepair(),
-                        callback = MyCallback(save_history=configs.save_history),
-                        eliminate_duplicates = MyDuplicateElimination()
+                        sampling = my_sampling,
+                        crossover = my_crossover,
+                        mutation = my_mutation,
+                        repair = my_repair,
+                        callback = my_callback,
+                        eliminate_duplicates = my_duplicate_elimination
                     )
             else:
                 algorithm = RNSGA3(
                         pop_per_ref_point = configs.pop_size // ref_points.size,
                         ref_points = ref_points,
-                        sampling = MySampling(),
-                        crossover = MyCrossover(),
-                        mutation = MyMutation(configs.mutation_prob),
-                        repair = MyRepair(),
-                        callback = MyCallback(save_history=configs.save_history),
-                        eliminate_duplicates = MyDuplicateElimination()
+                        sampling = my_sampling,
+                        crossover = my_crossover,
+                        mutation = my_mutation,
+                        repair = my_repair,
+                        callback = my_callback,
+                        eliminate_duplicates = my_duplicate_elimination
                     )
                 
 
@@ -123,7 +146,7 @@ def solve(ntw, configs):
             # Algorithms that use reference directions
             ref_dirs = get_reference_directions(
                     'das-dennis',
-                    1 if configs.single_mode else 2,
+                    len(configs.objectives),
                     n_partitions=configs.n_partitions
                 )
 
@@ -131,24 +154,24 @@ def solve(ntw, configs):
                 # Algorithms without population size
                 algorithm = algdict[configs.algorithm] (
                         ref_dirs = ref_dirs,
-                        sampling = MySampling(),
-                        crossover = MyCrossover(),
-                        mutation = MyMutation(configs.mutation_prob),
-                        repair = MyRepair(),
-                        callback = MyCallback(save_history=configs.save_history),
-                        eliminate_duplicates = MyDuplicateElimination()
+                        sampling = my_sampling,
+                        crossover = my_crossover,
+                        mutation = my_mutation,
+                        repair = my_repair,
+                        callback = my_callback,
+                        eliminate_duplicates = my_duplicate_elimination
                     )
             else:
                 # Algorithms with population size
                 algorithm = algdict[configs.algorithm] (
                         pop_size = configs.pop_size,
                         ref_dirs = ref_dirs,
-                        sampling = MySampling(),
-                        crossover = MyCrossover(),
-                        mutation = MyMutation(configs.mutation_prob),
-                        repair = MyRepair(),
-                        callback = MyCallback(save_history=configs.save_history),
-                        eliminate_duplicates = MyDuplicateElimination()
+                        sampling = my_sampling,
+                        crossover = my_crossover,
+                        mutation = my_mutation,
+                        repair = my_repair,
+                        callback = my_callback,
+                        eliminate_duplicates = my_duplicate_elimination
                     )
 
         res = minimize(

@@ -37,7 +37,12 @@ parser_generate.add_argument('--task_max_memory', type=float, default=TASK_MAX_M
 
 parser_generate.add_argument('--n_users', type=int, default=N_USERS, help='Number of users in the network')
 
-parser_generate.add_argument('-p', '--probability', type=float, choices=[Range(0.0, 1.0)], default=P, help='Probability of a user requesting a service.')
+parser_generate.add_argument('-p', '--probability', type=float, choices=[Range(0.0, 1.0)], default=P, help='Probability of a user requesting a service. This probability will only take effect if communities option is not enabled.')
+
+parser_generate.add_argument('--communities', action='store_true', help='Distribute task/user assignments based on communities.')
+parser_generate.add_argument('--group_size', type=int, default=GROUP_SIZE, help='Size of node grouping. This will determine the number of partitions, so that number of groups scales with the problem.')
+parser_generate.add_argument('--popularity', type=float, choices=[Range(0.0, 1.0)], default=POPULARITY, help='Probability of a task being requested by users within the same community.')
+parser_generate.add_argument('--spreadness', type=float, choices=[Range(0.0, 1.0)], default=SPREADNESS, help='Ratio at which the probability of a task being requested decreases for users from different communities.')
 
 parser_generate.add_argument('--paint', action='store_true', help='Paint the graph with Matplotlib')
 parser_generate.add_argument('--paint_seed', type=int, default=1, help='Seed used for graph painting')
@@ -67,7 +72,9 @@ parser_solve.add_argument('--algorithm', type=str, choices=ALGORITHMS, default=A
 parser_solve.add_argument('--termination_type', type=str, default=TERMINATION_TYPE, help='Termination type for the algorithm')
 parser_solve.add_argument('--n_gen', type=int, default=N_GEN, help='Number of generations as termination parameter')
 
-parser_solve.add_argument('--mutation_prob', type=float, choices=[Range(0.0, 1.0)], default=MUTATION_PROB, help='Probability of mutation in task assignment to nodes')
+parser_solve.add_argument('--n_replicas', type=int, default=N_REPLICAS, help='Max number of replicas for service assignment')
+parser_solve.add_argument('--mutation_prob_move', type=float, choices=[Range(0.0, 1.0)], default=MUTATION_PROB_MOVE, help='Probability of mutation of type move in task assignment to nodes')
+parser_solve.add_argument('--mutation_prob_change', type=float, choices=[Range(0.0, 1.0)], default=MUTATION_PROB_CHANGE, help='Probability of mutation of type change in task assignment to nodes')
 
 parser_solve.add_argument('-v', '--verbose', action='store_true')
 parser_solve.add_argument('--print', action='store_true', help='Print on console useful information about the generated network')

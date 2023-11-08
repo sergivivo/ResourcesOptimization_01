@@ -5,8 +5,9 @@ import random
 
 class ProblemILP():
 
-    def __init__(self, network, l=0.5, verbose=False, o1_max=None, o2_min=None):
+    def __init__(self, network, n_replicas=1, l=0.5, verbose=False, o1_max=None, o2_min=None):
         self.network = network
+        self.n_replicas = n_replicas
 
         # Define the constants
         self.N_TASKS = network.getNTasks()
@@ -49,6 +50,19 @@ class ProblemILP():
                 cat="Binary")
 
 
+
+        self.tudm = pulp.LpVariable.dicts(
+                "TaskUserDistanceMatrix",
+                (range(self.N_TASKS), range(self.N_USERS)),
+                cat="Continuous")
+
+        self.tudm_min_sel = pulp.LpVariable.dicts(
+                "TaskUserNodeDistaneMinimumSelection",
+                (range(self.N_TASKS), range(self.N_USERS), range(self.N_NODES)),
+                cat="Binary") 
+
+
+
         # Objective function
         self._setObjectiveFunction()
 
@@ -58,6 +72,10 @@ class ProblemILP():
         for t in range(self.N_TASKS):
             self.prob += pulp.lpSum(self.tnam[t]) == 1
             # Ensure each service is assigned to a single node
+
+            # TODO: Change code for N replicas.
+            # https://www.fico.com/fico-xpress-optimization/docs/dms2019-04/mipform/dhtml/chap2s1_sec_ssecminval.html
+
 
         for t in range(self.N_TASKS):
             for n in range(self.N_NODES):
@@ -76,13 +94,6 @@ class ProblemILP():
                         for t in range(self.N_TASKS)]
                 ) <= self.NODE_MEM_ARRAY[n]
             # Ensure that node's memory limit is not surpassed
-
-        # Helper constraints
-        if o1_max is not None:
-            self.prob += self._getObjectiveExpression(0) <= o1_max
-
-        if o2_min is not None:
-            self.prob += self._getObjectiveExpression(1) >= o2_min
 
 
     def _setObjectiveFunction(self):

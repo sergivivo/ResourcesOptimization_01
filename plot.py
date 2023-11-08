@@ -4,7 +4,8 @@ import numpy as np
 from file_utils import parse_file, get_solution_array
 
 def get_recommended_ticks(o_min, o_max, integer=False):
-    STEPS = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1., 2., 5., 10., 20., 50., 100.]
+    STEPS = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.,
+            2., 5., 10., 20., 50., 100.]
     DIVISIONS = 10
     for i in range(len(STEPS)):
         if STEPS[i] <= (o_max - o_min) / DIVISIONS < STEPS[i+1]:

@@ -13,13 +13,21 @@ import datetime
 Service instantiated on a single node
 """
 class MySampling(Sampling):
+    def __init__(self, n_replicas=1):
+        super().__init__()
+        self.n_replicas = n_replicas
+
     def _do(self, problem, n_samples, **kwargs):
         X = np.full((n_samples, 1),  None, dtype=object)
         for i in range(n_samples):
             matrix = np.zeros((problem.N_TASKS, problem.N_NODES), np.uint8)
             for row in range(problem.N_TASKS):
-                col = random.randrange(problem.N_NODES)
-                matrix[row, col] = 1
+                col_list = random.sample(
+                        range(problem.N_NODES),
+                        random.randint(1, self.n_replicas)
+                    )
+                for col in col_list:
+                    matrix[row, col] = 1
 
             X[i,0] = matrix
 
@@ -50,38 +58,127 @@ class MyCrossover(Crossover):
         return Y
 
 class MyRepair(Repair):
+    def __init__(self, n_replicas=1):
+        super().__init__()
+        self.n_replicas = n_replicas
 
     def _do(self, problem, X, **kwargs):
+        task_memory = problem.network.getTaskMemoryArray()
         for i in range(len(X)):
-            for row in range(problem.N_TASKS):
+            for tid in np.lexsort((task_memory,))[::-1]:
+
+                tmem = task_memory[tid]
                 available = problem.network.getNodeAvailableMemoryArray(X[i,0])
-                task_memory = problem.network.getTask(row).memory
-                curr_idx = np.nonzero(X[i, 0][row])[0]
 
-                # Check if task surpasses available memory
-                if task_memory > available[curr_idx]:
+                node_idxs_1 = np.flatnonzero(X[i, 0][tid])
+                node_idxs_0 = np.setdiff1d(np.arange(problem.N_NODES), node_idxs_1)
 
-                    # We search for a new node
-                    indexes = np.arange(len(available), dtype=np.uint16)
+                # From all ones, select those who surpass the available memory
+                node_idxs_1_filter = node_idxs_1[available[node_idxs_1] < 0.]
+                len1 = len(node_idxs_1_filter)
 
-                    # Filter so that we only choose between nodes with enough
-                    # available memory to hold this task
-                    filtered = indexes[available > task_memory]
+                # From all zeros, select those who have enough available memory
+                # to hold this specific task
+                node_idxs_0_filter = node_idxs_0[available[node_idxs_0] - tmem > 0.]
+                len0 = len(node_idxs_0_filter)
 
-                    # Subtract both sets and choose a new column
-                    choices = np.setdiff1d(filtered, curr_idx)
+                if len0 != 0 :
+                    if len0 < len1:
+                        # Remove overflowing replicas
+                        for nid in node_idxs_1_filter[len0:]:
+                            X[i,0][tid,nid] = 0
 
-                    if choices.size > 0:
-                        # Set to zero current column
-                        X[i, 0][row, curr_idx] = 0
+                        node_idxs_1_filter = node_idxs_1_filter[:len0]
+                        len1 = len0
 
-                        # Set to one new columns
-                        col = random.choice(choices)
-                        X[i, 0][row, col] = 1
+                    # Move to make nodes more compact
+                    n0_sorted = node_idxs_0_filter[
+                            np.lexsort((available[node_idxs_0_filter],))
+                        ]
+
+                    for j in range(len1):
+                        orig = node_idxs_1_filter[j]
+                        dest = n0_sorted[j]
+                        X[i,0][tid,orig] = 0
+                        X[i,0][tid,dest] = 1
 
         return X
 
 class MyMutation(Mutation):
+    def __init__(self, p_move=0.1, p_change=0.1, n_replicas=1):
+        super().__init__()
+        self.p_move   = p_move   # Change position of 1
+        self.p_change = p_change # Change 1 to 0 or 0 to 1
+        self.n_replicas = n_replicas
+
+    def _do(self, problem, X, **kwargs):
+        for i in range(len(X)):
+            rnd = random.random()
+
+            if rnd < self.p_move:
+                # First type: move assigned task to a different node
+                row = random.randrange(problem.N_TASKS)
+
+                nid_array_1 = np.flatnonzero(X[i,0][row])
+                nid_array_0 = np.setdiff1d(
+                        np.arange(problem.N_NODES),
+                        nid_array_1
+                    )
+
+                # Ensure that selected node can hold that task
+                tmem = problem.network.getTaskMemoryArray()[row]
+                available = problem.network.getNodeAvailableMemoryArray(X[i,0])
+                nid_array_0_filter = nid_array_0[available[nid_array_0] >= tmem]
+
+                if nid_array_0_filter.size > 0:
+                    col_src  = np.random.choice(nid_array_1)
+                    col_dest = np.random.choice(nid_array_0_filter)
+                    X[i,0][row, col_src ] = 0
+                    X[i,0][row, col_dest] = 1
+
+            elif self.n_replicas > 1 and rnd < self.p_move + self.p_change:
+                # Second type: change task assignment state within a node
+                row = random.randrange(problem.N_TASKS)
+                nid_array_1 = np.flatnonzero(X[i,0][row])
+
+                # Update rnd to fit between 0 and 1
+                rnd = (rnd - self.p_move) / self.p_change
+
+                if nid_array_1.size >= self.n_replicas:
+                    # Change 1 to 0 with 100% probability
+                    ch_01 = False
+                elif nid_array_1.size <= 1:
+                    # Change 0 to 1 with 100% probability
+                    ch_01 = True
+                elif rnd < 0.5:
+                    # Change 1 to 0 with 50% probability
+                    ch_01 = False
+                else:
+                    # Change 0 to 1 with 50% probability
+                    ch_01 = True
+
+                if ch_01:
+                    nid_array_0 = np.setdiff1d(
+                            np.arange(problem.N_NODES),
+                            nid_array_1
+                        )
+
+                    # Ensure that selected node can hold that task
+                    tmem = problem.network.getTaskMemoryArray()[row]
+                    available = problem.network.getNodeAvailableMemoryArray(X[i,0])
+                    nid_array_0_filter = nid_array_0[available[nid_array_0] >= tmem]
+
+                    if nid_array_0_filter.size > 0:
+                        col = np.random.choice(nid_array_0)
+                        X[i,0][row,col] = 1
+                    
+                else:
+                    col = np.random.choice(nid_array_1)
+                    X[i,0][row,col] = 0
+
+        return X
+
+class MyMutation_backup(Mutation):
     """Change the position of the 1 in a row with a given probability"""
     def __init__(self, p=0.05):
         super().__init__()
@@ -111,41 +208,6 @@ class MyMutation(Mutation):
                     # Set to one new columns
                     col = random.choice(choices)
                     X[i, 0][row, col] = 1
-
-        return X
-
-class MyMutation_backup(Mutation):
-    """Change the position of the 1 in a row with a given probability"""
-    def __init__(self, p=0.05):
-        super().__init__()
-        self.probability = p
-
-    def _do(self, problem, X, **kwargs):
-        # TODO: Escoger un individuo para mutar
-        for i in range(len(X)):
-            # TODO: Escoger aleatoriamente una sola fila y cambiarla siempre
-            for row in range(problem.N_TASKS):
-                if random.random() < self.probability:
-                    available = problem.network.getNodeAvailableMemoryArray(X[i,0])
-                    indexes = np.arange(len(available), dtype=np.uint16)
-
-                    # Filter so that we only choose between nodes with enough
-                    # available memory to hold this task
-                    task_memory = problem.network.getTask(row).memory
-                    filtered = indexes[available > task_memory]
-
-                    # Subtract both sets and choose a new column
-                    curr_idxs = np.nonzero(X[i, 0][row])
-                    choices = np.setdiff1d(filtered, curr_idxs)
-
-                    if choices.size > 0:
-                        # Set to zero current column
-                        for col in curr_idxs:
-                            X[i, 0][row, col] = 0
-
-                        # Set to one new columns
-                        col = random.choice(choices)
-                        X[i, 0][row, col] = 1
 
         return X
 
@@ -190,5 +252,30 @@ class MyCallback(Callback):
                 self.string_solution += '\n'
 
 
+if __name__ == '__main__':
+    from parameters import configs
+    from network import Network
+    from problems import Problem01v3
+    import pickle
 
+    random.seed(1)
+    np.random.seed(1)
+
+    ntw = pickle.load(configs.input)
+
+    problem = Problem01v3(ntw)
+    X = MySampling(n_replicas=1)._do(problem, n_samples=1)
+    X_r = MyRepair(n_replicas=1)._do(problem, X)[0,0].copy()
+    while True:
+        X_m = MyMutation(p_move=0.5, p_change=0.5, n_replicas=1)._do(problem, X)[0,0].copy()
+
+        print(X_r)
+        print()
+        print(X_m)
+        print()
+        print(X_r - X_m)
+        print('-----')
+
+        X_r = X_m
+        input()
 

@@ -25,6 +25,7 @@ class User:
 
     # Attributes
     id: int = field(init=False)
+    node_id: int = field(init=False, default=-1)
 
     def __post_init__(self):
         """Assign id automatically based on the amount of users generated"""

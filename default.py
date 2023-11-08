@@ -1,7 +1,7 @@
 import numpy as np
 
 # Random
-SEED = 727
+SEED = 722
 
 # Network generation
 E = 2
@@ -21,6 +21,10 @@ TASK_MAX_MEMORY = 1500
 N_USERS = 3
 P = 0.3
 
+GROUP_SIZE = 5
+POPULARITY = 0.5
+SPREADNESS = 0.5
+
 OUTPUT_FILE = 'graph01.gefx'
 
 # Pymoo optimization problem solving
@@ -29,7 +33,9 @@ ALGORITHM = 'NSGA2'
 N_GEN = 100
 TERMINATION_TYPE = 'n_gen'
 
-MUTATION_PROB = 0.2
+N_REPLICAS = 1
+MUTATION_PROB_MOVE   = 0.1
+MUTATION_PROB_CHANGE = 0.1
 
 N_PARTITIONS = 16
 REF_POINTS = '[[18., 6.], [15., 8.], [21., 5.]]'
