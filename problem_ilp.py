@@ -49,19 +49,18 @@ class ProblemILP():
                 range(self.N_NODES),
                 cat="Binary")
 
+        if self.n_replicas > 1:
+            # Used to implement the minimum operation
+            # https://www.fico.com/fico-xpress-optimization/docs/dms2019-04/mipform/dhtml/chap2s1_sec_ssecminval.html
+            self.tudm = pulp.LpVariable.dicts(
+                    "TaskUserDistanceMatrix",
+                    (range(self.N_TASKS), range(self.N_USERS)),
+                    cat="Continuous")
 
-
-        self.tudm = pulp.LpVariable.dicts(
-                "TaskUserDistanceMatrix",
-                (range(self.N_TASKS), range(self.N_USERS)),
-                cat="Continuous")
-
-        self.tudm_min_sel = pulp.LpVariable.dicts(
-                "TaskUserNodeDistaneMinimumSelection",
-                (range(self.N_TASKS), range(self.N_USERS), range(self.N_NODES)),
-                cat="Binary") 
-
-
+            self.d = pulp.LpVariable.dicts(
+                    "TaskUserNodeDistanceMinimumSelector",
+                    (range(self.N_TASKS), range(self.N_USERS), range(self.N_NODES)),
+                    cat="Binary") 
 
         # Objective function
         self._setObjectiveFunction()
@@ -70,12 +69,21 @@ class ProblemILP():
         self.prob += self._getObjectiveExpression(1) >= self.f2_min
 
         for t in range(self.N_TASKS):
-            self.prob += pulp.lpSum(self.tnam[t]) == 1
-            # Ensure each service is assigned to a single node
+            self.prob += pulp.lpSum(self.tnam[t]) >= 1
+            self.prob += pulp.lpSum(self.tnam[t]) <= self.n_replicas
 
-            # TODO: Change code for N replicas.
+        if self.n_replicas > 1:
+            # Implementation of the minimum operation in ILP for n_replicas > 1
             # https://www.fico.com/fico-xpress-optimization/docs/dms2019-04/mipform/dhtml/chap2s1_sec_ssecminval.html
-
+            max_diff = self.undm.max() - self.undm.min()
+            for t in range(self.N_TASKS):
+                for u in range(self.N_USERS):
+                    self.prob += pulp.lpSum(self.d[t][u]) == 1
+                    for n in range(self.N_NODES):
+                        self.prob += self.d[t][u][n] <= self.tnam[t][n]
+                        self.prob += pulp.lpSum(self.d[t][u][n] * self.undm[u][n]) <= self.undm[u][n] + max_diff * (1 - self.tnam[t][n])
+                        #self.prob += self.tudm[t][u] <= self.undm[u][n] + max_diff * (1 - self.tnam[t][n])
+                        #self.prob += self.tudm[t][u] >= self.undm[u][n] - max_diff * (1 - self.d[t][u][n])
 
         for t in range(self.N_TASKS):
             for n in range(self.N_NODES):
@@ -144,12 +152,17 @@ class ProblemILP():
             for u in range(self.N_USERS):
                 tudm[t][u] = pulp.LpAffineExpression()
                 for n in range(self.N_NODES):
-                    tudm[t][u] += self.tnam[t][n] * self.undm[u][n]
-                    # Assuming that the service is assigned to a single node
-                    # Else, instead of adding, it should get the max value
+                    if self.n_replicas == 1:
+                        tudm[t][u] += self.tnam[t][n] * self.undm[u][n]
+                        # Assuming that the service is assigned to a single node
+                    else:
+                        tudm[t][u] += self.d[t][u][n] * self.undm[u][n]
+                        # Else get minimum value contained in array d
+
         return tudm
     
-    def _getTasksAverageDistanceToUser(self, tudm):
+    def _getTasksAverageDistanceToUser(self):
+        tudm = self._getTaskUserDistanceMatrix()
         tud_avg = pulp.LpAffineExpression()
 
         tua_sum = np.sum(self.tuam, axis=1)
@@ -165,9 +178,7 @@ class ProblemILP():
     
     def _getObjectiveExpression(self, obj_n):
         if   obj_n == 0:
-            return self._getTasksAverageDistanceToUser(
-                    self._getTaskUserDistanceMatrix()
-                )
+            return self._getTasksAverageDistanceToUser()
         elif obj_n == 1:
             return pulp.lpSum(self.n_sel)
 
@@ -188,20 +199,16 @@ class ProblemILP():
     
     def getSolutionString(self):
         """Get solution for printing, only after call to method solve"""
-        s = ""
+        s = "Task/Node Assignment Matrix & Task memory\n"
         for t in range(self.N_TASKS):
             for n in range(self.N_NODES):
                 s += '{: <2}'.format("{:.0f}".format(pulp.value(self.tnam[t][n])))
+            s += '{: >8}'.format('{:.2f}'.format(self.TASK_MEM_ARRAY[t]))
             s += '\n'
         s += '\n'
 
         for n in range(self.N_NODES):
             s += '{: <2}'.format("{:.0f}".format(pulp.value(self.n_sel[n])))
-        s += '\n'
-        s += '\n'
-
-        for t in range(self.N_TASKS):
-            s += '{: <8}'.format('{:.2f}'.format(self.TASK_MEM_ARRAY[t]))
         s += '\n'
         s += '\n'
 

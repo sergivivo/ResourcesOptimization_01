@@ -78,7 +78,7 @@ def solve(ntw, configs):
             return None
 
         if configs.print:
-            print(problem.getSolutionString())
+            print(solution)
 
         return "{} {}".format(o1, o2)
         #return "{} {}".format(problem.getObjectiveNormalized(0), problem.getObjectiveNormalized(1))

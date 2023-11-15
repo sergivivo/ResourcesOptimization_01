@@ -26,8 +26,7 @@ class Network:
         self.graph = barabasi_albert_weighted_graph(seed=conf.seed, n=conf.n_nodes, m=conf.edges, maxw=conf.max_weight, minw=conf.min_weight)
 
         # Betweenness centrality
-        # TODO: Añadir weight='weight'
-        btw_cnt = nx.betweenness_centrality(self.graph, seed=conf.seed)
+        btw_cnt = nx.betweenness_centrality(self.graph, seed=conf.seed, weight='weight')
         # https://networkx.org/documentation/networkx-1.10/reference/generated/networkx.algorithms.centrality.betweenness_centrality.html
         bc_sorted = sorted(btw_cnt.items(), reverse=True, key=lambda e: e[1])
 
@@ -319,26 +318,33 @@ class Network:
 
         # TODO: Hacerlo configurable. Distribuir no de manera uniforme,
         # porque hay más servicios globales que regionales
-        t_depths = [
-                random.randint(0, n_nodes[nid].depth)
-                for nid in t_nids
-            ]
+        t_depths = []
+        for nid in t_nids:
+            layers = n_nodes[nid].depth + 1
+            rnd = random.uniform(0,(2**layers)-1)
+            k = 0
+            while rnd > (2**(k+1))-1:
+                k += 1
+            t_depths.append(k)
 
         tu_prob_matrix = np.zeros((len(self.tasks), len(self.users)))
         for tid in range(len(self.tasks)):
             for uid in range(len(self.users)):
-                t_nid = t_nids[tid]
-                u_nid = u_nids[uid]
-                t_depth = t_depths[tid]
+                if tu_matrix_min[tid,uid] == 1:
+                    tu_prob_matrix[tid,uid] = 1.
+                else:
+                    t_nid = t_nids[tid]
+                    u_nid = u_nids[uid]
+                    t_depth = t_depths[tid]
 
-                t_node = self.tree.findNodeByDepthAndElement(t_depth, t_nid)
-                u_node = n_nodes[u_nid]
+                    t_node = self.tree.findNodeByDepthAndElement(t_depth, t_nid)
+                    u_node = n_nodes[u_nid]
 
-                # Get common node and depth
-                common_node = self.tree.findCommonAncestorByNode(t_node, u_node)
-                c_depth = common_node.depth
+                    # Get common node and depth
+                    common_node = self.tree.findCommonAncestorByNode(t_node, u_node)
+                    c_depth = common_node.depth
 
-                tu_prob_matrix[tid,uid] = popularity * spreadness ** (t_depth - c_depth)
+                    tu_prob_matrix[tid,uid] = popularity * spreadness ** (t_depth - c_depth)
         
         return tu_prob_matrix
 
@@ -395,7 +401,7 @@ class Network:
         return self.nodes[node_id].memory - getNodeOccupiedMemory(node_id)
 
     def getTotalNodeMemory(self):
-        return np.sum(self.memory)
+        return np.sum([n.memory for n in self.nodes])
 
     def getTotalTaskMemory(self):
         return np.sum([t.memory for t in self.tasks])
