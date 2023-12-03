@@ -1,5 +1,6 @@
 from problems import Problem01v3
-from problem_tools import MySampling, MyCrossover, MyRepair, MyMutation, MyDuplicateElimination, MyCallback
+from problem_tools import *
+#from problem_tools import MySampling_v1, MyCrossover_v1, MyCrossover_v2, MyRepair, MyMutation, MyDuplicateElimination, MyCallback
 from problem_ilp import ProblemILP
 
 from pymoo.algorithms.moo.nsga2  import NSGA2
@@ -35,32 +36,27 @@ algdict = {
         'RVEA': RVEA
     }
 
+sampling_v = (
+        MySampling_v1,
+        MySampling_v2,
+        MySampling_v3
+    )
+
+crossover_v = (
+        MyCrossover_v1,
+        MyCrossover_v2,
+        MyCrossover_v3
+    )
+
+mutation_v = (
+        MyMutation_v1,
+        MyMutation_v2,
+        MyMutation_v3
+    )
+
 def solve(ntw, configs):
 
     o_list = configs.objectives
-
-    my_sampling = MySampling(
-            n_replicas = configs.n_replicas
-        )
-    
-    my_crossover = MyCrossover()
-
-    my_repair = MyRepair(
-            n_replicas = configs.n_replicas
-        )
-
-    my_mutation = MyMutation(
-            p_move     = configs.mutation_prob_move,
-            p_change   = configs.mutation_prob_change,
-            n_replicas = configs.n_replicas
-        )
-
-    my_callback = MyCallback(
-            save_history=configs.save_history
-        )
-
-    my_duplicate_elimination = MyDuplicateElimination()
-
 
     if configs.algorithm == 'ILP':
         problem = ProblemILP(ntw, n_replicas=configs.n_replicas, l=configs.lmb, verbose=configs.verbose)
@@ -85,6 +81,29 @@ def solve(ntw, configs):
         #return "{} {}".format(problem.getSingleModeObjective(), '0')
 
     else:
+        my_sampling = sampling_v[configs.sampling_version](
+                n_replicas = configs.n_replicas
+            )
+        
+        my_crossover = crossover_v[configs.crossover_version](
+                n_replicas = configs.n_replicas
+            )
+
+        my_repair = MyRepair(
+                n_replicas = configs.n_replicas
+            )
+
+        my_mutation = mutation_v[configs.mutation_version](
+                p_move     = configs.mutation_prob_move,
+                p_change   = configs.mutation_prob_change,
+                n_replicas = configs.n_replicas
+            )
+
+        my_callback = MyCallback(
+                save_history=configs.save_history
+            )
+
+        my_duplicate_elimination = MyDuplicateElimination()
 
         if configs.single_mode and configs.algorithm in ('NSGA2', 'RNSGA2'):
             print("ERROR: Chosen algorithm does not support single-mode execution.")

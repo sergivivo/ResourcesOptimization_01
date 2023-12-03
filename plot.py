@@ -8,6 +8,8 @@ def get_recommended_ticks(o_min, o_max, integer=False):
             2., 5., 10., 20., 50., 100.]
     DIVISIONS = 10
     for i in range(len(STEPS)):
+        if o_max == o_min:
+            return np.array([o_min])
         if STEPS[i] <= (o_max - o_min) / DIVISIONS < STEPS[i+1]:
             if integer and STEPS[i+1] < 1:
                 step = 1
@@ -30,8 +32,8 @@ def plot_scatter_legend(configs):
     elif configs.n_objectives == 3:
         ax = fig.add_subplot(projection='3d')
 
-    o1_all = sum([o[:,0].tolist() for o in solutions], [])
-    o2_all = sum([o[:,1].tolist() for o in solutions], [])
+    o1_all = sum([o[:,0].tolist() for o in solutions if np.any(o)], [])
+    o2_all = sum([o[:,1].tolist() for o in solutions if np.any(o)], [])
     if configs.n_objectives == 3:
         o3_all = sum([o[:,2].tolist() for o in solutions], [])
 
@@ -46,14 +48,20 @@ def plot_scatter_legend(configs):
     o1_min, o1_max = min(o1_all), max(o1_all)
     o1_ticks = get_recommended_ticks(o1_min, o1_max)
     ax.set_xticks(o1_ticks)
-    half_x = (o1_ticks[1] - o1_ticks[0]) / 2
+    if o1_ticks.size == 1:
+        half_x = 0.5
+    else:
+        half_x = (o1_ticks[1] - o1_ticks[0]) / 2
     ax.set_xlim(o1_ticks[0] - half_x, o1_ticks[-1] + half_x)
 
     # Y axis ticks
     o2_min, o2_max = min(o2_all), max(o2_all)
     o2_ticks = get_recommended_ticks(o2_min, o2_max)
     ax.set_yticks(o2_ticks)
-    half_y = (o2_ticks[1] - o2_ticks[0]) / 2
+    if o2_ticks.size == 1:
+        half_y = 0.5
+    else:
+        half_y = (o2_ticks[1] - o2_ticks[0]) / 2
     ax.set_ylim(o2_ticks[0] - half_y, o2_ticks[-1] + half_y)
 
     if configs.n_objectives == 3:
@@ -83,11 +91,12 @@ def plot_scatter_legend(configs):
         elif configs.n_objectives == 3:
             ax.scatter(ref_points[:,0], ref_points[:,1], ref_points[:,2], s=50, facecolors="None", edgecolors=color, label='ILP', marker='D')
 
-    for s, color, name in zip(solutions, mcolors.TABLEAU_COLORS, names):
+    for sol, color, name in zip(solutions, mcolors.TABLEAU_COLORS, names):
+        if not np.any(sol): continue
         if configs.n_objectives == 2:
-            ax.scatter(s[:,0], s[:,1], s=30, facecolors=color, edgecolors=color, label=name)
+            ax.scatter(sol[:,0], sol[:,1], s=30, facecolors=color, edgecolors=color, label=name)
         elif configs.n_objectives == 3:
-            ax.scatter(s[:,0], s[:,1], s[:,2], s=30, facecolors=color, edgecolors=color, label=name)
+            ax.scatter(sol[:,0], sol[:,1], sol[:,2], s=30, facecolors=color, edgecolors=color, label=name)
 
     ax.legend()
 

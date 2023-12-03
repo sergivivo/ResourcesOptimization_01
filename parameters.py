@@ -95,6 +95,12 @@ parser_solve.add_argument('--n_partitions', type=int, default=N_PARTITIONS, help
 # Specific parameter for algorithms that need reference point
 parser_solve.add_argument('--ref_points', type=type_point_list, default=REF_POINTS, help='Specific parameter for algorithms that requiere reference points')
 
+# Problem operators
+parser_solve.add_argument('--sampling_version', type=int, default=SAMPLING_VERSION, help='Sampling version number to be used')
+parser_solve.add_argument('--crossover_version', type=int, default=CROSSOVER_VERSION, help='Crossover version number to be used')
+parser_solve.add_argument('--repair_version', type=int, default=0, help='Repair version number to be used')
+parser_solve.add_argument('--mutation_version', type=int, default=MUTATION_VERSION, help='Mutation version number to be used')
+
 
 
 # Solution arrange

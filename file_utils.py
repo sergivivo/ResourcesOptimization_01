@@ -38,15 +38,15 @@ def get_solution_array(f, n_obj=2):
         # To avoid ValueError when calling method index
         generation.append(last_gen+1)
         
-        o_slize = [None] * n_obj
+        o_slize = [[] for _ in range(n_obj)]
         for g in range(1, last_gen+1):
             try:
                 i, j = generation.index(g), generation.index(g+1)
                 for k in range(n_obj):
                     o_slize[k] = o[k][i:j]
-                solutions.append(np.array(o_slize).T)
             except ValueError:
-                solutions.append(np.array([]))
+                pass
+            solutions.append(np.array(o_slize).T)
     else:
         solutions.append(np.array(o).T)
 

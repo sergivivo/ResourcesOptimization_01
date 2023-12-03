@@ -81,9 +81,9 @@ class ProblemILP():
                     self.prob += pulp.lpSum(self.d[t][u]) == 1
                     for n in range(self.N_NODES):
                         self.prob += self.d[t][u][n] <= self.tnam[t][n]
-                        self.prob += pulp.lpSum(self.d[t][u][n] * self.undm[u][n]) <= self.undm[u][n] + max_diff * (1 - self.tnam[t][n])
-                        #self.prob += self.tudm[t][u] <= self.undm[u][n] + max_diff * (1 - self.tnam[t][n])
-                        #self.prob += self.tudm[t][u] >= self.undm[u][n] - max_diff * (1 - self.d[t][u][n])
+                        self.prob += pulp.lpSum([
+                                self.d[t][u][k] * self.undm[u][k] for k in range(self.N_NODES)
+                            ]) <= self.undm[u][n] + max_diff * (1 - self.tnam[t][n])
 
         for t in range(self.N_TASKS):
             for n in range(self.N_NODES):

@@ -1,6 +1,6 @@
 from pymoo.core.problem   import Problem, ElementwiseProblem
 
-from problem_tools import MySampling, MyCrossover, MyRepair, MyMutation, MyDuplicateElimination, MyCallback
+from problem_tools import MySampling_v2, MyCrossover_v3, MyRepair, MyMutation_v2, MyDuplicateElimination, MyCallback
 from default import OBJ_LIST
 
 from pymoo.termination import get_termination
@@ -19,7 +19,7 @@ class Problem01v1(ElementwiseProblem):
         - n×m variables enteras, posteriormente organizadas matricialmente,
           para la asignación de tareas (filas) a servidores (columnas).
     OBJETIVOS:
-        - Minimizar el número de nodos que tienen al menos una tarea
+        - Minimizar el número de nodos que tiejen al menos una tarea
         - Reducir la distancia entre usuario y aplicación. Minimizar la suma de
           distancias de los usuarios que acceden a cada servicio.
     RESTRICCIONES:
@@ -192,10 +192,10 @@ class Problem01v3(ElementwiseProblem):
         for obj in obj_list:
             if   obj == OBJ_LIST[0]:
                 self.f_min_list.append(
-                        network.getTasksMinAverageDistanceToUser_v2(
+                        network.getTasksMinAverageDistanceToUser(
                                 undm=self.undm, tuam=self.tuam))
                 self.f_max_list.append(
-                        network.getTasksMaxAverageDistanceToUser_v2(
+                        network.getTasksMaxAverageDistanceToUser(
                                 undm=self.undm, tuam=self.tuam))
 
             elif obj == OBJ_LIST[1]:

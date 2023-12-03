@@ -50,14 +50,21 @@ def get_pareto_front_from_files(configs, n_obj=2):
     for f in configs.input:
         generation, o = parse_file(f, n_obj)
 
-        # Generation should preferably be an empty list
-        if generation:
-            # Otherwise, only get the values from the last generation
-            last_idx = generation.index(generation[-1])
+        if o is not None and o[0] is not None:
+            # Generation should preferably be an empty list
+            if generation:
+                # Otherwise, only get the values from the last generation
+                last_idx = generation.index(generation[-1])
+            else:
+                last_idx = 0
+
             for i in range(n_obj):
                 solutions[i] += o[i][last_idx:]
 
     return get_pareto_front_from_array(np.array(solutions).T)
+
+
+
 
 if __name__ == '__main__':
     from parameters import configs
