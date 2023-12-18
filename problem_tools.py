@@ -508,7 +508,7 @@ class MyMutation_v1(Mutation):
         with equal probability, meaning that the more zeros there are in the
         matrix, the more probable is to change a 0 to 1 and vice versa.
     """
-    def __init__(self, p_move=0.1, p_change=0.1, n_replicas=1):
+    def __init__(self, p_move=0.1, p_change=0.1, p_binomial=0.05, n_replicas=1):
         super().__init__()
         self.p_move   = p_move   # Change position of 1
         self.p_change = p_change # Change 1 to 0 or 0 to 1
@@ -533,6 +533,7 @@ class MyMutation_v1(Mutation):
                     X[i,0][tid,nid] = 0
         return X
 
+# TODO: Nueva versión que haga más de una mutación sobre un mismo individuo
 class MyMutation_v2(Mutation):
     """
         Ensure constraints.
@@ -542,7 +543,7 @@ class MyMutation_v2(Mutation):
         with equal probability, meaning that the more zeros there are in the
         matrix, the more probable is to change a 0 to 1 and vice versa.
     """
-    def __init__(self, p_move=0.1, p_change=0.1, n_replicas=1):
+    def __init__(self, p_move=0.1, p_change=0.1, p_binomial=0.05, n_replicas=1):
         super().__init__()
         self.p_move   = p_move   # Change position of 1
         self.p_change = p_change # Change 1 to 0 or 0 to 1
@@ -563,11 +564,12 @@ class MyMutation_v2(Mutation):
                 # Get a random zero on that row that fit restrictions
                 zeros = np.flatnonzero(X[i,0][tid] - 1)
                 zeros_filter = zeros[available[zeros] >= tmem]
-                nid_dst = zeros_filter[random.randrange(zeros_filter.size)]
+                if zeros_filter.size > 0:
+                    nid_dst = zeros_filter[random.randrange(zeros_filter.size)]
 
-                # Move replica
-                X[i,0][tid,nid_src] = 0
-                X[i,0][tid,nid_dst] = 1
+                    # Move replica
+                    X[i,0][tid,nid_src] = 0
+                    X[i,0][tid,nid_dst] = 1
 
             elif rnd < self.p_move + self.p_change:
                 # Changing 1 -> 0 can be done if:
@@ -604,7 +606,7 @@ class MyMutation_v3(Mutation):
         Changing cell from 0 to 1 has the same probability as changing cell from
         1 to 0.
     """
-    def __init__(self, p_move=0.1, p_change=0.1, n_replicas=1):
+    def __init__(self, p_move=0.1, p_change=0.1, p_binomial=0.05, n_replicas=1):
         super().__init__()
         self.p_move   = p_move   # Change position of 1
         self.p_change = p_change # Change 1 to 0 or 0 to 1
@@ -675,6 +677,89 @@ class MyMutation_v3(Mutation):
                 else:
                     col = np.random.choice(nid_array_1)
                     X[i,0][row,col] = 0
+
+        return X
+
+class MyMutation_v4(Mutation):
+    """
+        Ensure constraints.
+        Rows with more replicas have more probability to move one of its
+        replicas.
+        A cell is randomly selected to switch its value from 0 to 1 or 1 to 0
+        with equal probability, meaning that the more zeros there are in the
+        matrix, the more probable is to change a 0 to 1 and vice versa.
+
+        A new probability parameter. Depending on the size of the problem, for
+        each individual, apply M mutations given by a binomial distribution.
+    """
+    def __init__(self, p_move=0.1, p_change=0.1, p_binomial=0.05, n_replicas=1):
+        super().__init__()
+        self.p_move   = p_move   # Change position of 1
+        self.p_change = p_change # Change 1 to 0 or 0 to 1
+        self.p_binomial = p_binomial # Amount of mutations on a single individual
+        self.n_replicas = n_replicas
+
+    def _do(self, problem, X, **kwargs):
+        n_mutation_array = np.random.binomial(
+                problem.N_TASKS - 1, self.p_binomial, size=len(X)) + 1
+        for i in range(len(X)):
+            n_mutations = n_mutation_array[i]
+            if n_mutations == 0:
+                continue
+
+            rnd = random.random()
+            if   rnd < self.p_move:
+                # Get a list of random ones in the matrix
+                pairs = np.transpose(np.nonzero(X[i,0]))
+                pairs_mut = pairs[random.sample(range(pairs.shape[0]), n_mutations)]
+                for tid, nid_src in pairs_mut:
+                    # Restrictions
+                    tmem = problem.network.getTaskMemoryArray()[tid]
+                    available = problem.network.getNodeAvailableMemoryArray(X[i,0])
+
+                    # Get a random zero on that row that fit restrictions
+                    zeros = np.flatnonzero(X[i,0][tid] - 1)
+                    zeros_filter = zeros[available[zeros] >= tmem]
+                    if zeros_filter.size > 0:
+                        nid_dst = zeros_filter[random.randrange(zeros_filter.size)]
+
+                        # Move replica
+                        X[i,0][tid,nid_src] = 0
+                        X[i,0][tid,nid_dst] = 1
+
+            elif rnd < self.p_move + self.p_change:
+                # Changing 1 -> 0 can be done if:
+                #   - Task's replicas > 1
+                # Changing 0 -> 1 can be done if:
+                #   - Task's replicas < N_REPLICAS
+                #   - Node's available memory >= Task memory
+                cell_array = [
+                        (tid, nid)
+                        for tid in range(problem.N_TASKS)
+                        for nid in range(problem.N_NODES)
+                    ]
+
+                random.shuffle(cell_array)
+
+                mutated = 0
+                for tid, nid in cell_array:
+                    if mutated == n_mutations:
+                        break
+
+                    available = problem.network.getNodeAvailableMemoryArray(X[i,0])
+                    tmem = problem.network.getTaskMemoryArray()[tid]
+                    trep = np.sum(X[i,0][tid])
+
+                    if X[i,0][tid,nid] == 1 and \
+                            trep > 1:
+                        X[i,0][tid,nid] = 0
+                        mutated += 1
+
+                    elif X[i,0][tid,nid] == 0 and \
+                            trep < self.n_replicas and \
+                            tmem <= available[nid]:
+                        X[i,0][tid,nid] = 1
+                        mutated += 1
 
         return X
 

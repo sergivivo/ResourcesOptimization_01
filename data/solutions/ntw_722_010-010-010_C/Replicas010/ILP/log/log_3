@@ -1,0 +1,76 @@
+Welcome to the CBC MILP Solver 
+Version: 2.10.3 
+Build Date: Dec 15 2019 
+
+command line - /home/sergi/.local/lib/python3.8/site-packages/pulp/solverdir/cbc/linux/64/cbc /tmp/409467a8f663423e81f72a1e90440c0d-pulp.mps timeMode elapsed branch printingOptions all solution /tmp/409467a8f663423e81f72a1e90440c0d-pulp.sol (default strategy 1)
+At line 2 NAME          MODEL
+At line 3 ROWS
+At line 2246 COLUMNS
+At line 19637 RHS
+At line 21879 BOUNDS
+At line 22990 ENDATA
+Problem MODEL has 2241 rows, 1110 columns and 14620 elements
+Coin0008I MODEL read with 0 errors
+Option for timeMode changed from cpu to elapsed
+Continuous objective value is 0.289499 - 0.02 seconds
+Cgl0003I 0 fixed, 0 tightened bounds, 987 strengthened rows, 120 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 987 strengthened rows, 0 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 944 strengthened rows, 2 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 819 strengthened rows, 12 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 700 strengthened rows, 16 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 484 strengthened rows, 20 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 318 strengthened rows, 28 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 224 strengthened rows, 16 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 188 strengthened rows, 12 substitutions
+Cgl0004I processed model has 2143 rows, 1013 columns (1013 integer (1013 of which binary)) and 19269 elements
+Cbc0038I Initial state - 0 integers unsatisfied sum - 0
+Cbc0038I Solution found of 0.289499
+Cbc0038I Before mini branch and bound, 1013 integers at bound fixed and 0 continuous
+Cbc0038I Mini branch and bound did not improve solution (2.37 seconds)
+Cbc0038I After 2.37 seconds - Feasibility pump exiting with objective of 0.289499 - took 0.00 seconds
+Cbc0012I Integer solution of 0.28949876 found by feasibility pump after 0 iterations and 0 nodes (2.37 seconds)
+Cbc0001I Search completed - best objective 0.2894987583171399, took 0 iterations and 0 nodes (2.38 seconds)
+Cbc0035I Maximum depth 0, 0 variables fixed on reduced cost
+Cuts at root node changed objective from 0.289499 to 0.289499
+Probing was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Gomory was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Knapsack was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Clique was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+MixedIntegerRounding2 was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+FlowCover was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+TwoMirCuts was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+ZeroHalf was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+
+Result - Optimal solution found
+
+Objective value:                0.28949876
+Enumerated nodes:               0
+Total iterations:               0
+Time (CPU seconds):             0.64
+Time (Wallclock seconds):       2.75
+
+Option for printingOptions changed from normal to all
+Total time (CPU seconds):       0.65   (Wallclock seconds):       2.79
+
+Welcome to the CBC MILP Solver 
+Version: 2.10.3 
+Build Date: Dec 15 2019 
+
+command line - /home/sergi/.local/lib/python3.8/site-packages/pulp/solverdir/cbc/linux/64/cbc /tmp/1ab17a9fefee4919b1ae6752942c77ad-pulp.mps timeMode elapsed branch printingOptions all solution /tmp/1ab17a9fefee4919b1ae6752942c77ad-pulp.sol (default strategy 1)
+At line 2 NAME          MODEL
+At line 3 ROWS
+At line 2247 COLUMNS
+At line 20188 RHS
+At line 22431 BOUNDS
+At line 23542 ENDATA
+Problem MODEL has 2242 rows, 1110 columns and 15170 elements
+Coin0008I MODEL read with 0 errors
+Option for timeMode changed from cpu to elapsed
+Problem is infeasible - 0.02 seconds
+Option for printingOptions changed from normal to all
+Total time (CPU seconds):       0.03   (Wallclock seconds):       0.11
+
+
+real	0m8,163s
+user	0m2,008s
+sys	0m0,209s

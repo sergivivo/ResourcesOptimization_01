@@ -5,6 +5,7 @@ from plot import plot_convergence, plot_scatter_legend
 from arrange import get_pareto_front_from_files
 from analyze import get_table
 from file_utils import solutions_to_string
+from get_ref_points import solutions_to_ref_points, lazy_ref_points
 
 import random
 import numpy as np
@@ -77,12 +78,22 @@ if __name__ == "__main__":
 
     elif configs.command == 'arrange':
         # Arrange files of solutions and prepare them for ploting
-        array = get_pareto_front_from_files(configs, n_obj=configs.n_objectives)
+        array = get_pareto_front_from_files(configs)
 
         s = solutions_to_string(array)
 
         if configs.print:
             print(s)
+
+        if configs.output:
+            configs.output.write(s)
+            configs.output.close()
+
+    elif configs.command == 'get_ref_points':
+        if configs.lazy:
+            s = lazy_ref_points(configs).tolist().__repr__()
+        else:
+            s = solutions_to_ref_points(configs)
 
         if configs.output:
             configs.output.write(s)

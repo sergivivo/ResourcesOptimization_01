@@ -45,9 +45,25 @@ source script_functions.sh
 #	wait $pid
 #done
 
-SEED2=A
-plot_comparison operator_versions "for $ALGORITHM"
+plot_comparison algorithms
 
-#SAMPLING_VERSION=0
-#CROSSOVER_VERSION=2
-#plot_comparison algorithms "for SV$SAMPLING_VERSION:CV$CROSSOVER_VERSION"
+#for MUTATION_PROB_MOVE in ${MUTATION_PROB_MOVE_LIST[*]}; do
+#for MUTATION_PROB_CHANGE in ${MUTATION_PROB_CHANGE_LIST[*]}; do
+#for MUTATION_PROB_BINOMIAL in ${MUTATION_PROB_BINOMIAL_LIST[*]}; do
+#
+#for SAMPLING_VERSION in ${SAMPLING_VERSION_LIST[*]}; do
+#for CROSSOVER_VERSION in ${CROSSOVER_VERSION_LIST[*]}; do
+#for MUTATION_VERSION in ${MUTATION_VERSION_LIST[*]}; do
+#
+#plot_convergence
+#
+#done
+#done
+#done
+#
+#done
+#done
+#done
+
+
+

@@ -75,6 +75,7 @@ parser_solve.add_argument('--n_gen', type=int, default=N_GEN, help='Number of ge
 parser_solve.add_argument('--n_replicas', type=int, default=N_REPLICAS, help='Max number of replicas for service assignment')
 parser_solve.add_argument('--mutation_prob_move', type=float, choices=[Range(0.0, 1.0)], default=MUTATION_PROB_MOVE, help='Probability of mutation of type move in task assignment to nodes')
 parser_solve.add_argument('--mutation_prob_change', type=float, choices=[Range(0.0, 1.0)], default=MUTATION_PROB_CHANGE, help='Probability of mutation of type change in task assignment to nodes')
+parser_solve.add_argument('--mutation_prob_binomial', type=float, choices=[Range(0.0, 1.0)], default=MUTATION_PROB_BINOMIAL, help='Binomial probability which will give the amount of mutations for each individual depending on infrastructure size. Only for mutation versions that support it (currently, only Mutation_v4)')
 
 parser_solve.add_argument('-v', '--verbose', action='store_true')
 parser_solve.add_argument('--print', action='store_true', help='Print on console useful information about the generated network')
@@ -114,6 +115,19 @@ parser_arrange.add_argument('--n_objectives', type=int, default=2, help='Number 
 
 
 
+# Reference point calculator
+parser_get_ref_points = subparsers.add_parser('get_ref_points', help='Get reference points')
+
+parser_get_ref_points.add_argument('-i', '--input', type=argparse.FileType('r'), help='Reference point file')
+parser_get_ref_points.add_argument('--ntw_file', type=argparse.FileType('rb'), help='Network file used to find normalized values')
+parser_get_ref_points.add_argument('--objectives', type=str, nargs='+', default=['distance','nodes'], help='Objectives to use in the algorithm')
+
+parser_get_ref_points.add_argument('--lazy', action='store_true', help='Lazy way of getting reference points. It gets a solution file, normalizes the points, scales by a float between 0 and 1 and denormalizes them.')
+parser_get_ref_points.add_argument('-l', '--lmb', type=float, choices=[Range(0.0, 1.0)], default=LAMBDA, help='If used with lazy option, will act as a scalar constant.')
+
+parser_get_ref_points.add_argument('-o', '--output', type=argparse.FileType('w'), help='Output file path used for storing the reference point formated solution')
+
+
 
 # Solution analysis
 parser_analyze = subparsers.add_parser('analyze', help='Analyze the generated solutions using several tools')
@@ -136,6 +150,7 @@ parser_plot = subparsers.add_parser('plot', help='Plot the resulting data from t
 
 parser_plot.add_argument('-i', '--input', nargs='+', type=argparse.FileType('r'), help='List of input file paths used for plotting the solutions')
 parser_plot.add_argument('--ref_points', type=type_point_list, default=None, help='Specific parameter for plotting reference points')
+parser_plot.add_argument('--ref_points_legend', type=str, help='Names for the reference points to be plotted and added to the legend')
 
 parser_plot.add_argument('--n_objectives', type=int, default=2, help='Number of objectives within the solution file.')
 

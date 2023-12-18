@@ -45,7 +45,8 @@ def get_pareto_front_from_array(array):
 #
 #    return pareto
 
-def get_pareto_front_from_files(configs, n_obj=2):
+def get_pareto_front_from_files(configs):
+    n_obj = configs.n_objectives
     solutions = [[] for _ in range(n_obj)]
     for f in configs.input:
         generation, o = parse_file(f, n_obj)

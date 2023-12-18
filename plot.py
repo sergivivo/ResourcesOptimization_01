@@ -87,9 +87,9 @@ def plot_scatter_legend(configs):
     if configs.ref_points is not None:
         color = mcolors.TABLEAU_COLORS['tab:cyan']
         if configs.n_objectives == 2:
-            ax.scatter(ref_points[:,0], ref_points[:,1], s=50, facecolors="None", edgecolors=color, label='ILP', marker='D')
+            ax.scatter(ref_points[:,0], ref_points[:,1], s=50, facecolors="None", edgecolors=color, label=configs.ref_points_legend, marker='D')
         elif configs.n_objectives == 3:
-            ax.scatter(ref_points[:,0], ref_points[:,1], ref_points[:,2], s=50, facecolors="None", edgecolors=color, label='ILP', marker='D')
+            ax.scatter(ref_points[:,0], ref_points[:,1], ref_points[:,2], s=50, facecolors="None", edgecolors=color, label=configs.ref_points_legend, marker='D')
 
     for sol, color, name in zip(solutions, mcolors.TABLEAU_COLORS, names):
         if not np.any(sol): continue

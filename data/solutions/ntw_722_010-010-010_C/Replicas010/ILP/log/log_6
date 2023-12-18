@@ -1,0 +1,97 @@
+Welcome to the CBC MILP Solver 
+Version: 2.10.3 
+Build Date: Dec 15 2019 
+
+command line - /home/sergi/.local/lib/python3.8/site-packages/pulp/solverdir/cbc/linux/64/cbc /tmp/3271fa8858a34ecb95d64ef924b629dc-pulp.mps timeMode elapsed branch printingOptions all solution /tmp/3271fa8858a34ecb95d64ef924b629dc-pulp.sol (default strategy 1)
+At line 2 NAME          MODEL
+At line 3 ROWS
+At line 2246 COLUMNS
+At line 19637 RHS
+At line 21879 BOUNDS
+At line 22990 ENDATA
+Problem MODEL has 2241 rows, 1110 columns and 14620 elements
+Coin0008I MODEL read with 0 errors
+Option for timeMode changed from cpu to elapsed
+Continuous objective value is 0.543855 - 0.03 seconds
+Cgl0003I 0 fixed, 0 tightened bounds, 987 strengthened rows, 120 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 988 strengthened rows, 0 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 937 strengthened rows, 8 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 857 strengthened rows, 24 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 653 strengthened rows, 20 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 482 strengthened rows, 12 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 321 strengthened rows, 8 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 171 strengthened rows, 8 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 124 strengthened rows, 8 substitutions
+Cgl0004I processed model has 2146 rows, 1020 columns (1020 integer (1020 of which binary)) and 19322 elements
+Cbc0038I Initial state - 0 integers unsatisfied sum - 9.10383e-15
+Cbc0038I Solution found of 0.55708
+Cbc0038I Before mini branch and bound, 1020 integers at bound fixed and 0 continuous
+Cbc0038I Mini branch and bound did not improve solution (2.77 seconds)
+Cbc0038I After 2.77 seconds - Feasibility pump exiting with objective of 0.55708 - took 0.01 seconds
+Cbc0012I Integer solution of 0.55708023 found by feasibility pump after 0 iterations and 0 nodes (2.77 seconds)
+Cbc0001I Search completed - best objective 0.5570802291261852, took 0 iterations and 0 nodes (2.79 seconds)
+Cbc0035I Maximum depth 0, 0 variables fixed on reduced cost
+Cuts at root node changed objective from 0.55708 to 0.55708
+Probing was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Gomory was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Knapsack was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Clique was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+MixedIntegerRounding2 was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+FlowCover was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+TwoMirCuts was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+ZeroHalf was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+
+Result - Optimal solution found
+
+Objective value:                0.55708023
+Enumerated nodes:               0
+Total iterations:               0
+Time (CPU seconds):             1.08
+Time (Wallclock seconds):       3.81
+
+Option for printingOptions changed from normal to all
+Total time (CPU seconds):       1.09   (Wallclock seconds):       3.83
+
+Welcome to the CBC MILP Solver 
+Version: 2.10.3 
+Build Date: Dec 15 2019 
+
+command line - /home/sergi/.local/lib/python3.8/site-packages/pulp/solverdir/cbc/linux/64/cbc /tmp/44662f391a4f49ec8d2a2ec143aa7427-pulp.mps timeMode elapsed branch printingOptions all solution /tmp/44662f391a4f49ec8d2a2ec143aa7427-pulp.sol (default strategy 1)
+At line 2 NAME          MODEL
+At line 3 ROWS
+At line 2247 COLUMNS
+At line 20188 RHS
+At line 22431 BOUNDS
+At line 23542 ENDATA
+Problem MODEL has 2242 rows, 1110 columns and 15170 elements
+Coin0008I MODEL read with 0 errors
+Option for timeMode changed from cpu to elapsed
+Continuous objective value is 0.543855 - 0.03 seconds
+Cgl0003I 0 fixed, 0 tightened bounds, 987 strengthened rows, 123 substitutions
+Cgl0004I processed model has 2352 rows, 1110 columns (1110 integer (1110 of which binary)) and 16272 elements
+Cbc0006I The LP relaxation is infeasible or too expensive
+Cuts at root node changed objective from 1.79769e+308 to -1.79769e+308
+Probing was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Gomory was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Knapsack was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Clique was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+MixedIntegerRounding2 was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+FlowCover was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+TwoMirCuts was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+ZeroHalf was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+
+Result - Linear relaxation infeasible
+
+No feasible solution found
+Enumerated nodes:               0
+Total iterations:               0
+Time (CPU seconds):             0.21
+Time (Wallclock seconds):       0.62
+
+Option for printingOptions changed from normal to all
+Total time (CPU seconds):       0.23   (Wallclock seconds):       0.67
+
+
+real	0m9,939s
+user	0m2,787s
+sys	0m0,176s

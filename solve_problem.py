@@ -51,7 +51,8 @@ crossover_v = (
 mutation_v = (
         MyMutation_v1,
         MyMutation_v2,
-        MyMutation_v3
+        MyMutation_v3,
+        MyMutation_v4
     )
 
 def solve(ntw, configs):
@@ -96,6 +97,7 @@ def solve(ntw, configs):
         my_mutation = mutation_v[configs.mutation_version](
                 p_move     = configs.mutation_prob_move,
                 p_change   = configs.mutation_prob_change,
+                p_binomial = configs.mutation_prob_binomial,
                 n_replicas = configs.n_replicas
             )
 

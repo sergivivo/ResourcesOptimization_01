@@ -1,0 +1,78 @@
+Welcome to the CBC MILP Solver 
+Version: 2.10.3 
+Build Date: Dec 15 2019 
+
+command line - /home/sergi/.local/lib/python3.8/site-packages/pulp/solverdir/cbc/linux/64/cbc /tmp/c52a5ba44ba541cea1743a65acec9fcb-pulp.mps timeMode elapsed branch printingOptions all solution /tmp/c52a5ba44ba541cea1743a65acec9fcb-pulp.sol (default strategy 1)
+At line 2 NAME          MODEL
+At line 3 ROWS
+At line 2246 COLUMNS
+At line 19097 RHS
+At line 21339 BOUNDS
+At line 22450 ENDATA
+Problem MODEL has 2241 rows, 1110 columns and 14620 elements
+Coin0008I MODEL read with 0 errors
+Option for timeMode changed from cpu to elapsed
+Continuous objective value is 0.111111 - 0.09 seconds
+Cgl0003I 0 fixed, 0 tightened bounds, 987 strengthened rows, 120 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 992 strengthened rows, 0 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 929 strengthened rows, 24 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 823 strengthened rows, 14 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 595 strengthened rows, 14 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 419 strengthened rows, 18 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 294 strengthened rows, 18 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 207 strengthened rows, 12 substitutions
+Cgl0003I 0 fixed, 0 tightened bounds, 149 strengthened rows, 8 substitutions
+Cgl0004I processed model has 2135 rows, 1010 columns (1010 integer (1010 of which binary)) and 18997 elements
+Cbc0045I 10 integer variables out of 1010 objects (1010 integer) have cost of 0.111111 - high priority
+Cbc0045I branch on satisfied N create fake objective Y random cost Y
+Cbc0038I Initial state - 0 integers unsatisfied sum - 1.93179e-14
+Cbc0038I Solution found of 0.111111
+Cbc0038I Before mini branch and bound, 1010 integers at bound fixed and 0 continuous
+Cbc0038I Mini branch and bound did not improve solution (0.84 seconds)
+Cbc0038I After 0.84 seconds - Feasibility pump exiting with objective of 0.111111 - took 0.02 seconds
+Cbc0012I Integer solution of 0.11111111 found by feasibility pump after 0 iterations and 0 nodes (0.84 seconds)
+Cbc0001I Search completed - best objective 0.1111111111111, took 0 iterations and 0 nodes (0.84 seconds)
+Cbc0035I Maximum depth 0, 0 variables fixed on reduced cost
+Cuts at root node changed objective from 0.111111 to 0.111111
+Probing was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Gomory was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Knapsack was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+Clique was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+MixedIntegerRounding2 was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+FlowCover was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+TwoMirCuts was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+ZeroHalf was tried 0 times and created 0 cuts of which 0 were active after adding rounds of cuts (0.000 seconds)
+
+Result - Optimal solution found
+
+Objective value:                0.11111111
+Enumerated nodes:               0
+Total iterations:               0
+Time (CPU seconds):             1.18
+Time (Wallclock seconds):       2.60
+
+Option for printingOptions changed from normal to all
+Total time (CPU seconds):       1.19   (Wallclock seconds):       2.64
+
+Welcome to the CBC MILP Solver 
+Version: 2.10.3 
+Build Date: Dec 15 2019 
+
+command line - /home/sergi/.local/lib/python3.8/site-packages/pulp/solverdir/cbc/linux/64/cbc /tmp/081b622cb1c44239816c8d5fc1d97601-pulp.mps timeMode elapsed branch printingOptions all solution /tmp/081b622cb1c44239816c8d5fc1d97601-pulp.sol (default strategy 1)
+At line 2 NAME          MODEL
+At line 3 ROWS
+At line 2247 COLUMNS
+At line 19108 RHS
+At line 21351 BOUNDS
+At line 22462 ENDATA
+Problem MODEL has 2242 rows, 1110 columns and 14630 elements
+Coin0008I MODEL read with 0 errors
+Option for timeMode changed from cpu to elapsed
+Problem is infeasible - 0.10 seconds
+Option for printingOptions changed from normal to all
+Total time (CPU seconds):       0.11   (Wallclock seconds):       0.37
+
+
+real	0m8,240s
+user	0m2,708s
+sys	0m0,227s
