@@ -43,14 +43,19 @@ get_solution_path() {
 	local NTW_NAME=$1
 	local N_REPLICAS=$(zeropad_left $2 3)
 	local ALGORITHM=$3
+	shift; shift; shift
+	local OBJECTIVES=("$@")
 
 	if [ $ALGORITHM = "ILP" ]; then
 		local ALG_TYPE="ILP"
 	else
 		local ALG_TYPE="Genetics"
 	fi
+	
+	local prev_ifs=$IFS
+	IFS='-'; local OBJ_STRING="${OBJECTIVES[*]}"; IFS=$prev_ifs
 
-	echo "$NTW_NAME/Replicas$N_REPLICAS/$ALG_TYPE"
+	echo "$NTW_NAME/obj_$OBJ_STRING/Replicas$N_REPLICAS/$ALG_TYPE"
 }
 
 get_solution_filename() {
@@ -74,7 +79,13 @@ get_solution_filename() {
 get_ref_points_path() {
 	local NTW_NAME=$1
 	local N_REPLICAS=$(zeropad_left $2 3)
-	echo "$NTW_NAME/Replicas$N_REPLICAS/RefPoints"
+	shift; shift
+	local OBJECTIVES=("$@")
+
+	local prev_ifs=$IFS
+	IFS='-'; local OBJ_STRING="${OBJECTIVES[*]}"; IFS=$prev_ifs
+
+	echo "$NTW_NAME/obj_$OBJ_STRING/Replicas$N_REPLICAS/RefPoints"
 }
 
 get_ref_points_filename() {
@@ -84,22 +95,24 @@ get_ref_points_filename() {
 
 solve() {
 	local NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	local SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM)"
+	local SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
 	local SOL_NAME="$(get_solution_filename $ALGORITHM $SEED2 $POP_SIZE $N_GEN $SAMPLING_VERSION $CROSSOVER_VERSION $MUTATION_VERSION $MUTATION_PROB_MOVE $MUTATION_PROB_CHANGE $MUTATION_PROB_BINOMIAL)"
-	local REF_PATH="$(get_ref_points_path $NTW_NAME $N_REPLICAS)"
+	local REF_PATH="$(get_ref_points_path $NTW_NAME $N_REPLICAS ${OBJECTIVES[@]})"
 	local REF_NAME="$(get_ref_points_filename $REF_POINTS_ALGORITHM)"
 	local REF_FILE="$SOL_PREFIX/$REF_PATH/$REF_NAME"
 	if [ -f "$REF_FILE" ]; then
-		local REF_POINTS_OPT=(--ref_points $(cat "$REF_FILE"))
+		local REF_POINTS_STRING="$(cat $REF_FILE | tr -d '[:space:]')"
+		local REF_POINTS_OPT=--ref_points
 	else
-		local REF_POINTS_OPT=()
+		local REF_POINTS_STRING=
+		local REF_POINTS_OPT=
 	fi
 
 	mkdir -p "$SOL_PREFIX/$SOL_PATH" 
 
 	python3 main.py --seed $SEED2 solve \
 		-i "$NTW_PREFIX/$NTW_NAME" \
-		--objectives ${OBJECTIVES[*]} ${REF_POINTS_OPT[0]} "${REF_POINTS_OPT[*]:1}" \
+		--objectives ${OBJECTIVES[*]} $REF_POINTS_OPT $REF_POINTS_STRING \
 		--pop_size $POP_SIZE --n_gen $N_GEN \
 		--n_replicas $N_REPLICAS \
 		--n_partitions $N_PARTITIONS \
@@ -117,7 +130,7 @@ solve() {
 
 arrange() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
 
 	ALG_FILES=()
 	for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
@@ -134,9 +147,9 @@ arrange() {
 
 solution_to_ref_points() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $REF_POINTS_ALGORITHM)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $REF_POINTS_ALGORITHM ${OBJECTIVES[@]})"
 	SOL_NAME="$(get_solution_filename $REF_POINTS_ALGORITHM $SEED2 $POP_SIZE $N_GEN $SAMPLING_VERSION $CROSSOVER_VERSION $MUTATION_VERSION $MUTATION_PROB_MOVE $MUTATION_PROB_CHANGE $MUTATION_PROB_BINOMIAL)"
-	REF_PATH="$(get_ref_points_path $NTW_NAME $N_REPLICAS)"
+	REF_PATH="$(get_ref_points_path $NTW_NAME $N_REPLICAS ${OBJECTIVES[@]})"
 	REF_FILENAME="$(get_ref_points_filename $REF_POINTS_ALGORITHM)"
 
 	mkdir -p "$SOL_PREFIX/$REF_PATH" 
@@ -157,7 +170,7 @@ solution_to_ref_points() {
 
 solve_ilp() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS 'ILP')"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS 'ILP' ${OBJECTIVES[@]})"
 
 	rm -rf "$SOL_PREFIX/$SOL_PATH/*"
 
@@ -193,22 +206,21 @@ solve_ilp() {
 
 plot_convergence() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
 	SOL_NAME="$(get_solution_filename $ALGORITHM $SEED2 $POP_SIZE $N_GEN $SAMPLING_VERSION $CROSSOVER_VERSION $MUTATION_VERSION $MUTATION_PROB_MOVE $MUTATION_PROB_CHANGE $MUTATION_PROB_BINOMIAL)"
 
 	python3 main.py --seed $SEED plot \
+		--objectives ${OBJECTIVES[*]} \
 		--n_objectives $N_OBJECTIVES \
 		-i "$SOL_PREFIX/$SOL_PATH/$SOL_NAME" \
 		--history \
 		--title "Objective space - Convergence ($ALGORITHM) - $NODES:$TASKS:$USERS" \
-		--x_label "Mean latency between users/services" \
-		--y_label "Occupied nodes" \
 		--trim_gen
 }
 
 get_algorithm_files() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
 
 	ALG_FILES=()
 	i=0
@@ -222,7 +234,7 @@ get_algorithm_files() {
 
 get_operator_version_files() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
 
 	OP_FILES=()
 	i=0
@@ -256,7 +268,7 @@ get_operator_version_legend() {
 
 get_mutation_files() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
 
 	MUT_FILES=()
 	i=0
@@ -308,25 +320,25 @@ plot_comparison() {
 	fi
 
 	local NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
-	local REF_PATH="$(get_ref_points_path $NTW_NAME $N_REPLICAS)"
+	local REF_PATH="$(get_ref_points_path $NTW_NAME $N_REPLICAS ${OBJECTIVES[@]})"
 	local REF_NAME="$(get_ref_points_filename $REF_POINTS_ALGORITHM)"
 	local REF_FILE="$SOL_PREFIX/$REF_PATH/$REF_NAME"
 	if [ -f "$REF_FILE" ]; then
-		local REF_POINTS_OPT=(--ref_points $(cat "$REF_FILE"))
+		local REF_POINTS_STRING="$(cat $REF_FILE | tr -d '[:space:]')"
+		local REF_POINTS_OPT=--ref_points
 	else
-		local REF_POINTS_OPT=()
+		local REF_POINTS_STRING=
+		local REF_POINTS_OPT=
 	fi
 
 	python3 main.py --seed $SEED plot \
-		--n_objectives $N_OBJECTIVES ${REF_POINTS_OPT[0]} "${REF_POINTS_OPT[*]:1}" \
+		--objectives ${OBJECTIVES[*]} \
+		--n_objectives $N_OBJECTIVES $REF_POINTS_OPT $REF_POINTS_STRING \
 		--ref_points_legend "$REF_POINTS_ALGORITHM RP" \
 		-i $FILES \
 		--comparison \
 		--legend $FILE_LEGEND \
-		--title "Objective space - Comparison between $TITLE $SUFFIX - $NODES:$TASKS:$USERS" \
-		--x_label "Mean latency between users/services" \
-		--y_label "Occupied nodes" \
-		--z_label "Mean hops to service" 
+		--title "Objective space - Comparison between $TITLE $SUFFIX - $NODES:$TASKS:$USERS"
 }
 
 send_telegram_message() {

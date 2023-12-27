@@ -153,6 +153,7 @@ parser_plot.add_argument('--ref_points', type=type_point_list, default=None, hel
 parser_plot.add_argument('--ref_points_legend', type=str, help='Names for the reference points to be plotted and added to the legend')
 
 parser_plot.add_argument('--n_objectives', type=int, default=2, help='Number of objectives within the solution file.')
+parser_plot.add_argument('--objectives', type=str, nargs='+', default=['distance','nodes'], help='Objectives to be plotted')
 
 parser_plot.add_argument('--history', action='store_true', help='Plot a single solution including the history representing the evolution with the form of a scatter plot')
 parser_plot.add_argument('--trim_gen', action='store_true', help='Plots generations until convergence')
@@ -160,11 +161,10 @@ parser_plot.add_argument('--trim_gen', action='store_true', help='Plots generati
 parser_plot.add_argument('--comparison', action='store_true', help='Plot multiple solutions comparing them in the same graph with the form of a scatter plot')
 parser_plot.add_argument('--legend', nargs='*', type=str, help='List of names for the different inputs to be plotted and added to the legend')
 
-
 parser_plot.add_argument('--title', type=str, default='', help='Title of the plot')
-parser_plot.add_argument('--x_label', type=str, default='', help='Label for X axis')
-parser_plot.add_argument('--y_label', type=str, default='', help='Label for Y axis')
-parser_plot.add_argument('--z_label', type=str, default='', help='Label for Z axis')
+parser_plot.add_argument('--x_label', type=str, default=None, help='Label for X axis')
+parser_plot.add_argument('--y_label', type=str, default=None, help='Label for Y axis')
+parser_plot.add_argument('--z_label', type=str, default=None, help='Label for Z axis')
 
 parser_plot.add_argument('-o', '--output', type=argparse.FileType('wb'), help='Output file path used for saving plot result')
 

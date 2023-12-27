@@ -59,7 +59,7 @@ def solve(ntw, configs):
 
     o_list = configs.objectives
 
-    if configs.algorithm == 'ILP':
+    if configs.algorithm == 'ILP' and len(o_list) == 2:
         problem = ProblemILP(ntw, n_replicas=configs.n_replicas, l=configs.lmb, verbose=configs.verbose)
 
         status = problem.solve()
@@ -151,6 +151,8 @@ def solve(ntw, configs):
                         eliminate_duplicates = my_duplicate_elimination
                     )
             else:
+                # ERROR: The number of points (n_points = 4) can not be created uniformly.                       # Either choose n_points = 3 (n_partitions = 1) or n_points = 6 (n_partitions = 2)
+                # A lo mejor la población tiene que ser divisible entre el número de objetivos
                 algorithm = RNSGA3(
                         pop_per_ref_point = configs.pop_size // ref_points.size,
                         ref_points = ref_points,

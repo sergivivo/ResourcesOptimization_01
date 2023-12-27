@@ -55,7 +55,8 @@ plot_comparison algorithms
 #for CROSSOVER_VERSION in ${CROSSOVER_VERSION_LIST[*]}; do
 #for MUTATION_VERSION in ${MUTATION_VERSION_LIST[*]}; do
 #
-#plot_convergence
+SEED2=1
+plot_convergence
 #
 #done
 #done

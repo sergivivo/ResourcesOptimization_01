@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 from file_utils import parse_file, get_solution_array
+from default import OBJ_LIST, OBJ_DESCRIPTION
 
 def get_recommended_ticks(o_min, o_max, integer=False):
     STEPS = [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1.,
@@ -18,6 +19,10 @@ def get_recommended_ticks(o_min, o_max, integer=False):
             start = np.floor(o_min / step) * step
             end   = (np.ceil(o_max / step) + 1) * step
             return np.arange(start, end, step)
+
+def getXYZLabel(xyz_idx, objectives):
+    obj_idx = OBJ_LIST.index(objectives[xyz_idx])
+    return OBJ_DESCRIPTION[obj_idx]
 
 def plot_scatter_legend(configs):
     solutions = []
@@ -74,10 +79,22 @@ def plot_scatter_legend(configs):
 
 
     # Title and labels
-    ax.set_xlabel(configs.x_label)
-    ax.set_ylabel(configs.y_label)
+    if configs.x_label is None:
+        ax.set_xlabel(getXYZLabel(0, configs.objectives))
+    else:
+        ax.set_xlabel(configs.x_label)
+
+    if configs.y_label is None:
+        ax.set_ylabel(getXYZLabel(1, configs.objectives))
+    else:
+        ax.set_ylabel(configs.y_label)
+
     if configs.n_objectives == 3:
-        ax.set_zlabel(configs.z_label)
+        if configs.z_label is None:
+            ax.set_zlabel(getXYZLabel(2, configs.objectives))
+        else:
+            ax.set_zlabel(configs.z_label)
+
     plt.title(configs.title)
 
     # Fill missing names in legend so we plot all solutions even if there's any without a label
@@ -117,21 +134,37 @@ def plot_convergence(configs):
         idx = generation.index(last_gen)
         step = len(generation) - idx
 
-        o1_cmp, o2_cmp = set(o[0][idx:]), set(o[1][idx:])
-        o1_set, o2_set = set(o[0][idx-step:idx]), set(o[1][idx-step:idx])
-        while o1_set == o1_cmp and o2_set == o2_cmp:
+        o_cmp = [set(o[i][idx:]) for i in range(configs.n_objectives)]
+        o_set = [set(o[i][idx-step:idx]) for i in range(configs.n_objectives)]
+        convergence = np.any([o_set[i] == o_cmp[i] for i in range(configs.n_objectives)])
+        while convergence:
             idx -= step
-            o1_set, o2_set = set(o[0][idx-step:idx]), set(o[1][idx-step:idx])
+            o_set = [set(o[i][idx-step:idx]) for i in range(configs.n_objectives)]
+            convergence = np.any([o_set[i] == o_cmp[i] for i in range(configs.n_objectives)])
 
         generation = generation[:idx+step]
         o1 = o[0][:idx+step]
         o2 = o[1][:idx+step]
+        if configs.n_objectives > 2:
+            o3 = o[2][:idx+step]
+    else:
+        o1 = o[0]
+        o2 = o[1]
+        if configs.n_objectives > 2:
+            o3 = o[2]
 
     color = [float(item) for item in generation]
 
-    fig, ax = plt.subplots()
+    fig = plt.figure()
+    if configs.n_objectives == 2:
+        ax = fig.add_subplot()
+    elif configs.n_objectives > 2:
+        ax = fig.add_subplot(projection='3d')
 
-    points = ax.scatter(o1, o2, s=50, c=color, cmap='viridis')
+    if configs.n_objectives == 2:
+        points = ax.scatter(o1, o2, s=30, c=color, cmap='viridis')
+    else:
+        points = ax.scatter(o1, o2, o3, s=30, c=color, cmap='viridis')
 
     # X axis ticks
     o1_min, o1_max = min(o1), max(o1)
@@ -142,14 +175,36 @@ def plot_convergence(configs):
 
     # Y axis ticks
     o2_min, o2_max = min(o2), max(o2)
-    o2_ticks = get_recommended_ticks(o2_min, o2_max, integer=True)
+    o2_ticks = get_recommended_ticks(o2_min, o2_max)
     ax.set_yticks(o2_ticks)
     half_y = (o2_ticks[1] - o2_ticks[0]) / 2
     ax.set_ylim(o2_ticks[0] - half_y, o2_ticks[-1] + half_y)
 
+    if configs.n_objectives > 2:
+        # Z axis ticks
+        o3_min, o3_max = min(o3), max(o3)
+        o3_ticks = get_recommended_ticks(o3_min, o3_max)
+        ax.set_zticks(o3_ticks)
+        half_z = (o3_ticks[1] - o3_ticks[0]) / 2
+        ax.set_zlim(o3_ticks[0] - half_z, o3_ticks[-1] + half_z)
+
     # Title and labels
-    plt.xlabel(configs.x_label)
-    plt.ylabel(configs.y_label)
+    if configs.x_label is None:
+        ax.set_xlabel(getXYZLabel(0, configs.objectives))
+    else:
+        ax.set_xlabel(configs.x_label)
+
+    if configs.y_label is None:
+        ax.set_ylabel(getXYZLabel(1, configs.objectives))
+    else:
+        ax.set_ylabel(configs.y_label)
+
+    if configs.n_objectives == 3:
+        if configs.z_label is None:
+            ax.set_zlabel(getXYZLabel(2, configs.objectives))
+        else:
+            ax.set_zlabel(configs.z_label)
+
     plt.title(configs.title)
 
     fig.colorbar(points)

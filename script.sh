@@ -56,22 +56,21 @@ source script_functions.sh
 
 #TODO: https://scikit-learn.org/stable/auto_examples/linear_model/plot_polynomial_interpolation.html
 
-#for ALGORITHM in ${ALGORITHMS[*]}; do
-#	echo "$ALGORITHM"
-#
-#	for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
-#		echo "  $SEED2"
-#		solve &
-#		pids[${SEED2}]=$!
-#	done
-#
-#	for pid in ${pids[*]}; do
-#		wait $pid
-#	done
-#
-#	arrange
-#
-#done
+for ALGORITHM in ${ALGORITHMS[*]}; do
+	echo "$ALGORITHM"
 
-solution_to_ref_points 0.8
+	for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
+		echo "  $SEED2"
+		solve &
+		pids[${SEED2}]=$!
+	done
 
+	for pid in ${pids[*]}; do
+		wait $pid
+	done
+
+	arrange
+
+done
+
+#solution_to_ref_points 0.8

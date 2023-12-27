@@ -181,39 +181,27 @@ class Problem01v3(ElementwiseProblem):
                 self.l = [l, 1.-l] + [0.] * (len(obj_list)-2)
 
         # Save for efficiency purposes
-        self.undm = network.getUserNodeDistanceMatrix()
-        self.unhm = network.getUserNodeHopsMatrix()
-        self.tuam = network.getTaskUserAssignmentMatrix()
+        self.efficiency = {
+                'undm': network.getUserNodeDistanceMatrix(),
+                'unhm': network.getUserNodeHopsMatrix(),
+                'tuam': network.getTaskUserAssignmentMatrix(),
+                'trash': 4782389472389479328
+            }
 
         # Values needed for normalization
         self.obj_list = obj_list
         self.f_min_list = []
         self.f_max_list = []
         for obj in obj_list:
-            if   obj == OBJ_LIST[0]:
-                self.f_min_list.append(
-                        network.getTasksMinAverageDistanceToUser(
-                                undm=self.undm, tuam=self.tuam))
-                self.f_max_list.append(
-                        network.getTasksMaxAverageDistanceToUser(
-                                undm=self.undm, tuam=self.tuam))
+            f_min, f_max = network.getObjectiveBounds(obj)
 
-            elif obj == OBJ_LIST[1]:
-                self.f_min_list.append(network.getMinimumNNodesNeeded())
-                self.f_max_list.append(self.N_NODES)
-
-            elif obj == OBJ_LIST[2]:
-                self.f_min_list.append(
-                        network.getTasksMinAverageHopsToUser(
-                                unhm=self.unhm, tuam=self.tuam))
-                self.f_max_list.append(
-                        network.getTasksMaxAverageHopsToUser(
-                                unhm=self.unhm, tuam=self.tuam))
-
-            if self.f_min_list[-1] == self.f_max_list[-1]:
-                self.f_max_list += 1
+            if f_min == f_max:
+                f_max += 1
                 # This way, we avoid dividing by 0 and enforce 0 as normalized O2
                 # value, so it does not interfere with O1 in any way
+
+            self.f_min_list.append(f_min)
+            self.f_max_list.append(f_max)
 
         super().__init__(
                 n_var = 1,
@@ -226,17 +214,7 @@ class Problem01v3(ElementwiseProblem):
         f_original = []
         f_norm = []
         for obj, f_min, f_max in zip(self.obj_list, self.f_min_list, self.f_max_list):
-            if   obj == OBJ_LIST[0]:
-                f = self.network.getTasksAverageDistanceToUser(
-                        matrix, tuam=self.tuam, undm=self.undm)
-
-            elif obj == OBJ_LIST[1]:
-                f = np.count_nonzero(np.max(matrix, axis=0))
-
-            elif obj == OBJ_LIST[2]:
-                f = self.network.getTasksAverageHopsToUser(
-                                matrix, tuam=self.tuam, unhm=self.unhm)
-            
+            f = self.network.evaluateObjective(obj, matrix, **self.efficiency)
             f_original.append(f)
             f_norm.append((f - f_min) / (f_max - f_min))
 

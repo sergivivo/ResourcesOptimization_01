@@ -43,7 +43,14 @@ REF_POINTS = '[[18., 6.], [15., 8.], [21., 5.]]'
 
 LAMBDA = 0.5 # used for converting bimode to single-mode
 
-OBJ_LIST = ['distance', 'nodes', 'hops']
+OBJ_LIST = ['distance', 'nodes', 'hops', 'occupation', 'variance']
+OBJ_DESCRIPTION = [
+        'Mean latency between users/services',
+        'Occupied nodes',
+        'Mean hops to service',
+        'Mean node occupation ratio',
+        'Node occupation ratio variance'
+    ]
 
 ALGORITHMS = [
         'NSGA2',

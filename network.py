@@ -9,6 +9,7 @@ import random
 from ntw_functions import barabasi_albert_weighted_graph, get_pareto_distribution, truncate_array
 from ntw_classes import Node, User, Task
 
+from default import OBJ_LIST
 
 # CLASSES
 # ==============================================================================
@@ -432,7 +433,7 @@ class Network:
 
         return nodes_needed
 
-    def getTasksAverageDistanceToUser(self, matrix, undm=None, tuam=None, maximize=False):
+    def getTasksAverageDistanceToUser(self, matrix, undm=None, tuam=None, maximize=False, **garbage):
         """
         Returns a float with the average distance of all services to
         their respective users.
@@ -446,7 +447,6 @@ class Network:
         Matrices tuam and undm can be passed by parameter for efficiency
         purposes.
         """
-
         if tuam is None: tuam = self.getTaskUserAssignmentMatrix()
         tudm = self.getTaskUserDistanceMatrix(
                 matrix, undm=undm, tuam=tuam, includeAll=False, maximize=maximize)
@@ -458,7 +458,7 @@ class Network:
         avg_row = tua_sum[tu_filter] / tud_sum[tu_filter]
         return np.average(avg_row)
 
-    def getTasksMinAverageDistanceToUser(self, undm=None, tuam=None):
+    def getTasksMinAverageDistanceToUser(self, undm=None, tuam=None, **garbage):
         """
         Returns a float with the max possible average distance of all services
         to their respective users. This is achieved by passing tnam as a full
@@ -471,7 +471,7 @@ class Network:
         return self.getTasksAverageDistanceToUser(
                 tnam, undm=undm, tuam=tuam)
 
-    def getTasksMaxAverageDistanceToUser(self, undm=None, tuam=None):
+    def getTasksMaxAverageDistanceToUser(self, undm=None, tuam=None, **garbage):
         """
         Returns a float with the max possible average distance of all services
         to their respective users. This is achieved by passing tnam as a full
@@ -484,13 +484,13 @@ class Network:
         return self.getTasksAverageDistanceToUser(
                 tnam, undm=undm, tuam=tuam, maximize=True)
 
-    def getTasksMinAverageDistanceToUser_v2(self, undm=None, tuam=None):
+    def getTasksMinAverageDistanceToUser_v2(self, undm=None, tuam=None, **garbage):
         return np.average(np.min(self.getTaskNodeDistanceMatrix(undm, tuam), axis=1))
 
-    def getTasksMaxAverageDistanceToUser_v2(self, undm=None, tuam=None):
+    def getTasksMaxAverageDistanceToUser_v2(self, undm=None, tuam=None, **garbage):
         return np.average(np.max(self.getTaskNodeDistanceMatrix(undm, tuam), axis=1))
 
-    def getTasksAverageHopsToUser(self, matrix, unhm=None, tuam=None, maximize=False):
+    def getTasksAverageHopsToUser(self, matrix, unhm=None, tuam=None, maximize=False, **garbage):
         """
         Returns a float with the average hops of all services to
         their respective users.
@@ -515,11 +515,38 @@ class Network:
         avg_row = tua_sum[tu_filter] / tuh_sum[tu_filter]
         return np.average(avg_row)
 
-    def getTasksMinAverageHopsToUser(self, unhm=None, tuam=None):
+    def getTasksMinAverageHopsToUser(self, unhm=None, tuam=None, **garbage):
+        tnam = np.ones((len(self.tasks), len(self.nodes)), dtype=np.uint8)
+        return self.getTasksAverageHopsToUser(
+                tnam, unhm=unhm, tuam=tuam)
+
+    def getTasksMaxAverageHopsToUser(self, unhm=None, tuam=None, **garbage):
+        tnam = np.ones((len(self.tasks), len(self.nodes)), dtype=np.uint8)
+        return self.getTasksAverageHopsToUser(
+                tnam, unhm=unhm, tuam=tuam, maximize=True)
+
+    def getTasksMinAverageHopsToUser_v2(self, unhm=None, tuam=None, **garbage):
         return np.average(np.min(self.getTaskNodeHopsMatrix(unhm, tuam), axis=1))
 
-    def getTasksMaxAverageHopsToUser(self, unhm=None, tuam=None):
+    def getTasksMaxAverageHopsToUser_v2(self, unhm=None, tuam=None, **garbage):
         return np.average(np.max(self.getTaskNodeHopsMatrix(unhm, tuam), axis=1))
+
+    def getNodeOccupationRatio(self, tnam, tma=None, nma=None, **garbage):
+        tnmm = self.getTaskNodeMemoryMatrix(tnam)
+        nma  = self.getNodeMemoryArray()
+        return np.average(np.sum(tnmm, axis=0) / nma)
+
+    def getNodeOccupationVariance(self, tnam, tma=None, nma=None, **garbage):
+        tnmm = self.getTaskNodeMemoryMatrix(tnam)
+        nma  = self.getNodeMemoryArray()
+        xa   = np.sum(tnmm, axis=0) / nma
+
+        mean = np.average(xa)
+        sumacc = 0.
+        for xi in xa:
+            sumacc += (xi - mean)**2
+
+        return sumacc / len(self.nodes)
 
     def getBetweennessCentrality(self):
         return nx.betweenness_centrality(
@@ -683,7 +710,7 @@ class Network:
                 i += 1
         return hops
     
-    def getTaskUserDistanceMatrix(self, tnam, undm=None, tuam=None, includeAll=True, maximize=False):
+    def getTaskUserDistanceMatrix(self, tnam, undm=None, tuam=None, includeAll=True, maximize=False, **garbage):
         """Get the distance matrix from the tasks (rows) to the users
         (columns) given a task/node assignment matrix
 
@@ -734,7 +761,7 @@ class Network:
 
         return tudm
 
-    def getTaskUserHopsMatrix(self, tnam, unhm=None, tuam=None, includeAll=True, maximize=False):
+    def getTaskUserHopsMatrix(self, tnam, unhm=None, tuam=None, includeAll=True, maximize=False, **garbage):
         """Get the hops matrix from the tasks (rows) to the users
         (columns) given a task/node assignment matrix
 
@@ -800,7 +827,7 @@ class Network:
 
         return assignment
     
-    def getTaskNodeDistanceMatrix(self, undm=None, tuam=None):
+    def getTaskNodeDistanceMatrix(self, undm=None, tuam=None, **garbage):
         """Get the matrix of the average distance that a service can have to
         the users that requests it depending on the node that it is assigned"""
         if undm is None: undm = self.getUserNodeDistanceMatrix()
@@ -818,7 +845,7 @@ class Network:
 
         return tndm
 
-    def getTaskNodeHopsMatrix(self, unhm=None, tuam=None):
+    def getTaskNodeHopsMatrix(self, unhm=None, tuam=None, **garbage):
         """Get the matrix of the average hops that a service can have to
         the users that requests it depending on the node that it is assigned"""
         if unhm is None: unhm = self.getUserNodeHopsMatrix()
@@ -852,6 +879,7 @@ class Network:
 
         else:
             # Retrieve from tasks datastructure
+            # DEPRECATED
             for t in self.tasks:
                 mm[t.id, t.node_id] = t.memory
         
@@ -883,6 +911,60 @@ class Network:
         # TODO: Probar otros (proximidad geográfica, latencia, etc.)
         return nx.community.girvan_newman(
                 self.graph.subgraph([i for i in range(len(self.nodes))]))
+
+    # OBJECTIVE HANDLING
+    # ==========================================================================
+    def getObjectiveBounds(self, obj, **kwargs):
+        if   obj == OBJ_LIST[0]:
+            f_min = self.getTasksMinAverageDistanceToUser(**kwargs)
+            f_max = self.getTasksMaxAverageDistanceToUser(**kwargs)
+        elif obj == OBJ_LIST[1]:
+            f_min = self.getMinimumNNodesNeeded()
+            f_max = len(self.nodes)
+        elif obj == OBJ_LIST[2]:
+            f_min = self.getTasksMinAverageHopsToUser(**kwargs)
+            f_max = self.getTasksMaxAverageHopsToUser(**kwargs)
+        elif obj == OBJ_LIST[3]:
+            f_min = 0.
+            f_max = 1.
+        elif obj == OBJ_LIST[4]:
+            f_min = 0.
+            f_max = 0.25
+        #elif obj == OBJ_LIST[5]:
+        #    pass
+        #elif obj == OBJ_LIST[6]:
+        #    pass
+        #elif obj == OBJ_LIST[7]:
+        #    pass
+        #elif obj == OBJ_LIST[8]:
+        #    pass
+        #elif obj == OBJ_LIST[9]:
+        #    pass
+
+        return f_min, f_max
+
+    def evaluateObjective(self, obj, tnam, **kwargs):
+        if   obj == OBJ_LIST[0]:
+            return self.getTasksAverageDistanceToUser(tnam, **kwargs)
+        elif obj == OBJ_LIST[1]:
+            return np.count_nonzero(np.any(tnam, axis=0))
+        elif obj == OBJ_LIST[2]:
+            return self.getTasksAverageHopsToUser(tnam, **kwargs)
+        elif obj == OBJ_LIST[3]:
+            return self.getNodeOccupationRatio(tnam, **kwargs)
+        elif obj == OBJ_LIST[4]:
+            return self.getNodeOccupationVariance(tnam, **kwargs)
+        #elif obj == OBJ_LIST[5]:
+        #    pass
+        #elif obj == OBJ_LIST[6]:
+        #    pass
+        #elif obj == OBJ_LIST[7]:
+        #    pass
+        #elif obj == OBJ_LIST[8]:
+        #    pass
+        #elif obj == OBJ_LIST[9]:
+        #    pass
+
 
 if __name__ == '__main__':
     # Use 'generate' subparser for testing
