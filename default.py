@@ -2,6 +2,15 @@ import numpy as np
 
 # Random
 SEED = 722
+RANDOM_KEYS = [ 
+        'graph_nodes',
+        'graph_weights',
+        'node_memory',
+        'task_memory',
+        'tu_assignment',
+        'node_power',
+        'task_cpu_usage'
+    ]
 
 # Network generation
 E = 2
@@ -12,11 +21,27 @@ N_NODES = 10
 NODE_MEMORY_CHOICE = [512, 1024, 2048, 4096]
 NODE_MEMORY_PARETO_SHAPE = 1.16
 NODE_MAX_TASKS_CHOICE = list(range(100,101))
+NODE_N_CPUS_CHOICE = [1, 2, 4, 6, 8]
+
+# Power consumption
+NODE_MIN_PW_CHOICE = np.arange(3.5, 20.5, 0.5)
+NODE_CPU_PW_R_CHOICE = np.arange(0.5, 1.75, 0.25)
+NODE_CPU_PW_MODEL_LIST = [
+        (np.array([0.0, 0.2, 0.8, 1.0]), np.array([0.0, 0.3, 0.7, 1.0])),
+        (np.array([0.0, 0.3, 0.7, 1.0]), np.array([0.0, 0.2, 0.8, 1.0])),
+        (np.array([0.0, 0.2, 0.6, 1.0]), np.array([0.0, 0.4, 0.8, 1.0])),
+        (np.array([0.0, 0.4, 0.8, 1.0]), np.array([0.0, 0.2, 0.6, 1.0]))
+    ] # (x[i], y[i]) segment points for piecewise linear functions
+
+NODE_MEM_PW_R_CHOICE = np.arange(0.2, 1.1, 0.1)
 
 N_TASKS = 20
 TASK_MEMORY_PARETO_SHAPE = 0.8
 TASK_MIN_MEMORY = 30
 TASK_MAX_MEMORY = 1500
+TASK_CPU_USAGE_PARETO_SHAPE = 0.7
+TASK_MIN_CPU_USAGE = 0.01
+TASK_MAX_CPU_USAGE = 1.0
 
 N_USERS = 3
 P = 0.3
@@ -43,13 +68,22 @@ REF_POINTS = '[[18., 6.], [15., 8.], [21., 5.]]'
 
 LAMBDA = 0.5 # used for converting bimode to single-mode
 
-OBJ_LIST = ['distance', 'nodes', 'hops', 'occupation', 'variance']
+OBJ_LIST = [
+        'distance',
+        'nodes',
+        'hops',
+        'occupation',
+        'occ_variance',
+        'pw_consumption'
+    ]
+
 OBJ_DESCRIPTION = [
         'Mean latency between users/services',
         'Occupied nodes',
         'Mean hops to service',
         'Mean node occupation ratio',
-        'Node occupation ratio variance'
+        'Node occupation ratio variance',
+        'Power consumption'
     ]
 
 ALGORITHMS = [
@@ -62,7 +96,8 @@ ALGORITHMS = [
         'CTAEA',
         'SMSEMOA',
         'RVEA',
-        'ILP']
+        'ILP'
+    ]
 
 SAMPLING_VERSION = 0
 CROSSOVER_VERSION = 2

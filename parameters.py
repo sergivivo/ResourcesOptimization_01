@@ -34,6 +34,8 @@ parser_generate.add_argument('--n_nodes', type=int, default=N_NODES, help='Numbe
 parser_generate.add_argument('--n_tasks', type=int, default=N_TASKS, help='Number of tasks to be executed in the network')
 parser_generate.add_argument('--task_min_memory', type=float, default=TASK_MIN_MEMORY, help='Minimum memory that a task requires to execute')
 parser_generate.add_argument('--task_max_memory', type=float, default=TASK_MAX_MEMORY, help='Maximum memory that a task requires to execute')
+parser_generate.add_argument('--task_min_cpu_usage', type=float, default=TASK_MIN_CPU_USAGE, help='Minimum CPU usage that a task requires to execute')
+parser_generate.add_argument('--task_max_cpu_usage', type=float, default=TASK_MAX_CPU_USAGE, help='Maximum CPU usage that a task requires to execute')
 
 parser_generate.add_argument('--n_users', type=int, default=N_USERS, help='Number of users in the network')
 
@@ -139,7 +141,9 @@ parser_analyze.add_argument('--alg_names', nargs='+', type=str, help='Algorithm 
 parser_analyze.add_argument('--gen_step', type=int, default=0, help='Generation step used for printing the evolution of each indicator')
 
 parser_analyze.add_argument('--network', type=argparse.FileType('rb'), help='Input file path used for retrieving the network, useful for calculating several needed parameters, like O1 and O2 max values')
+
 parser_analyze.add_argument('--n_objectives', type=int, default=2, help='Number of objectives within the solution file.')
+parser_analyze.add_argument('--objectives', type=str, nargs='+', default=['distance','nodes'], help='Objectives to use in the algorithm')
 
 parser_analyze.add_argument('--print', action='store_true', help='Print on console the table')
 parser_analyze.add_argument('-o', '--output', type=argparse.FileType('w'), help='Output file path used for saving generated table')
@@ -178,8 +182,13 @@ parser_plot.add_argument('-o', '--output', type=argparse.FileType('wb'), help='O
 configs = parser.parse_args()
 configs.node_memory_choice = NODE_MEMORY_CHOICE
 configs.node_max_tasks_choice = NODE_MAX_TASKS_CHOICE
+configs.node_n_cpus_choice = NODE_N_CPUS_CHOICE
+configs.node_min_pw_choice = NODE_MIN_PW_CHOICE
+configs.node_cpu_pw_r_choice = NODE_CPU_PW_R_CHOICE
+configs.node_mem_pw_r_choice = NODE_CPU_PW_R_CHOICE
 configs.node_memory_pareto_shape = NODE_MEMORY_PARETO_SHAPE
 configs.task_memory_pareto_shape = TASK_MEMORY_PARETO_SHAPE
+configs.task_cpu_usage_pareto_shape = TASK_CPU_USAGE_PARETO_SHAPE
 
 if __name__ == '__main__':
     print(configs)

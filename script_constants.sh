@@ -5,9 +5,9 @@
 # ==============================================================================
 SEED=722
 
-NODES=10
-TASKS=10
-USERS=10
+NODES=40
+TASKS=40
+USERS=20
 
 COMMUNITIES=true
 
@@ -23,6 +23,7 @@ POP_SIZE=200
 N_GEN=200
 ALGORITHM='NSGA2'
 ALGORITHMS=('NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA')
+#ALGORITHMS=('NSGA3' 'UNSGA3')
 # Available: 'NSGA2' 'NSGA3' 'UNSGA3' 'CTAEA' 'SMSEMOA' 'RVEA' 'RNSGA2' 'RNSGA3'
 # Not implemented: 'AGEMOEA'
 
@@ -38,7 +39,7 @@ N_PARTITIONS=16
 REF_POINTS_ALGORITHM='NSGA2'
 LAMBDA_LIST=($(LANG=en_US seq 0.1 0.2 1))
 
-OBJECTIVES=('distance' 'occupation' 'variance')
+OBJECTIVES=('distance' 'occ_variance' 'pw_consumption')
 N_OBJECTIVES=3
 
 N_EXECUTIONS=4

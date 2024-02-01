@@ -2,6 +2,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import numpy as np
+from hashlib import md5
 from tree import TreeNode
 
 import random
@@ -9,7 +10,7 @@ import random
 from ntw_functions import barabasi_albert_weighted_graph, get_pareto_distribution, truncate_array
 from ntw_classes import Node, User, Task
 
-from default import OBJ_LIST
+from default import OBJ_LIST, RANDOM_KEYS, NODE_CPU_PW_MODEL_LIST
 
 # CLASSES
 # ==============================================================================
@@ -19,12 +20,42 @@ class Network:
     the graph resulting of the connection between these nodes. It will also
     give valuable information needed for the optimizations.
     """
+
+    def generateRandomObjectDictionary(self):
+        # Using random libary
+        self.rnd = {
+                key: random.Random("{}:{}".format(self.seed, key))
+                for key in RANDOM_KEYS
+            }
+
+        # Using NumPy's random
+        self.np_rnd = {
+                key: np.random.default_rng(
+                        int.from_bytes(
+                            "{}:{}".format(self.seed, key).encode(),
+                            'little'
+                        )
+                        # Only accepts positive integer
+                    )
+                for key in RANDOM_KEYS
+            }
+
     def __init__(self, conf):
         self.seed = conf.seed
+        random.seed(conf.seed)
         np.random.seed(conf.seed)
+
+        # Random object dictionary for each set of operations
+        self.generateRandomObjectDictionary()
         
         # Generate the graph
-        self.graph = barabasi_albert_weighted_graph(seed=conf.seed, n=conf.n_nodes, m=conf.edges, maxw=conf.max_weight, minw=conf.min_weight)
+        self.graph = barabasi_albert_weighted_graph(
+                seed=conf.seed,
+                n=conf.n_nodes,
+                m=conf.edges,
+                maxw=conf.max_weight,
+                minw=conf.min_weight,
+                rnd=self.rnd['graph_weights'])
 
         # Betweenness centrality
         btw_cnt = nx.betweenness_centrality(self.graph, seed=conf.seed, weight='weight')
@@ -36,7 +67,8 @@ class Network:
             get_pareto_distribution(
                 conf.node_memory_pareto_shape, 
                 conf.n_nodes,
-                conf.node_memory_choice[0]),
+                conf.node_memory_choice[0],
+                rng_obj=self.np_rnd['node_memory']),
             step_array=np.array(
                 conf.node_memory_choice))
 
@@ -44,7 +76,16 @@ class Network:
 
         self.nodes = [
             Node(
-                max_tasks = random.choice(conf.node_max_tasks_choice)
+                max_tasks = conf.node_max_tasks_choice[-1],
+                cpus = self.rnd['node_power'].choice(conf.node_n_cpus_choice),
+                min_power = self.rnd['node_power'].choice(
+                    conf.node_min_pw_choice),
+                cpu_power_ratio = self.rnd['node_power'].choice(
+                    conf.node_cpu_pw_r_choice),
+                cpu_power_model = self.rnd['node_power'].randrange(
+                    len(NODE_CPU_PW_MODEL_LIST)),
+                mem_power_ratio = self.rnd['node_power'].choice(
+                    conf.node_mem_pw_r_choice)
             ) for _ in range(conf.n_nodes)]
 
         # Assign memory to each node depending on its centrality giving more
@@ -60,9 +101,19 @@ class Network:
             Task(
                 memory = round(
                     get_pareto_distribution(
-                        conf.task_memory_pareto_shape, 1, conf.task_min_memory,
+                        conf.task_memory_pareto_shape,
+                        1,
+                        conf.task_min_memory,
+                        rng_obj=self.np_rnd['task_memory']
                     ).clip(max=conf.task_max_memory)[0], 2),
-                user_id = random.randrange(conf.n_users) # TODO: remove
+                user_id = 0, # TODO: remove
+                cpu_usage = round(
+                    get_pareto_distribution(
+                        conf.task_cpu_usage_pareto_shape,
+                        1,
+                        conf.task_min_cpu_usage,
+                        rng_obj=self.np_rnd['task_cpu_usage']
+                    ).clip(max=conf.task_max_cpu_usage)[0], 3)
             ) for _ in range(conf.n_tasks)]
 
         # Generate the management data for the users
@@ -102,7 +153,7 @@ class Network:
             tu_matrix = np.zeros((conf.n_tasks, conf.n_users), dtype=np.uint8)
             for tid in range(conf.n_tasks):
                 for uid in range(conf.n_users):
-                    if random.random() < tu_prob_matrix[tid,uid]:
+                    if self.rnd['tu_assignment'].random() < tu_prob_matrix[tid,uid]:
                         tu_matrix[tid,uid] = 1
 
         else:
@@ -127,7 +178,7 @@ class Network:
         for uid in range(n_users):
             # Get node's id given a random float
             acc_prob = 0
-            p = random.random()
+            p = self.rnd['graph_nodes'].random()
             for i in range(n_nodes):
                 acc_prob += bc_prob[i][1]
                 if p < acc_prob:
@@ -137,7 +188,7 @@ class Network:
 
             self.graph.add_node(n_nodes + uid)
             self.graph.add_edge(n_nodes + uid, nid,
-                    weight=round(random.uniform(minw, maxw), roundw))
+                    weight=round(self.rnd['graph_weights'].uniform(minw, maxw), roundw))
             self.users[uid].node_id = nid
 
     def _generateTaskUserAssignmentMatrix_v1(self):
@@ -147,9 +198,11 @@ class Network:
         requested by at least one user and every user requests at least one
         service. Less efficient than the second version.
         """
-        tu_matrix = np.random.choice([0,1], (len(self.tasks), len(self.users)))
+        tu_matrix = self.np_rnd['tu_assignment'].choice(
+                [0,1], (len(self.tasks), len(self.users)))
         while not np.all(np.any(tu_matrix, 0)) or not np.all(np.any(tu_matrix, 1)):
-            tu_matrix = np.random.choice([0,1], (len(self.tasks), len(self.users)))
+            tu_matrix = self.np_rnd['tu_assigment'].choice(
+                    [0,1], (len(self.tasks), len(self.users)))
             # Ensure that each user requests at least one task and each tasks is
             # requested by at least one user.
         return tu_matrix
@@ -234,7 +287,7 @@ class Network:
         if p_c > 0.:
             for i in range(n):
                 for j in range(m):
-                    if tu_matrix[i,j] == 0 and random.random() < p_c:
+                    if tu_matrix[i,j] == 0 and self.rnd['tu_assignment'].random() < p_c:
                         tu_matrix[i,j] = 1
 
         return tu_matrix
@@ -248,18 +301,18 @@ class Network:
         if n >= m:
             # Set ones randomly remaining rows
             for i in range(m, n):
-                tu_matrix[i, random.randrange(m)] = 1
+                tu_matrix[i, self.rnd['tu_assignment'].randrange(m)] = 1
 
             # Shuffle rows
-            np.random.shuffle(tu_matrix)
+            self.np_rnd['tu_assignment'].shuffle(tu_matrix)
 
         else:
             # Set ones randomly remaining columns
             for i in range(n, m):
-                tu_matrix[random.randrange(n), i] = 1
+                tu_matrix[self.rnd['tu_assignment'].randrange(n), i] = 1
 
             # Shuffle columns
-            np.random.shuffle(tu_matrix.T)
+            self.np_rnd['tu_assignment'].shuffle(tu_matrix.T)
 
         return tu_matrix
 
@@ -322,7 +375,7 @@ class Network:
         t_depths = []
         for nid in t_nids:
             layers = n_nodes[nid].depth + 1
-            rnd = random.uniform(0,(2**layers)-1)
+            rnd = self.rnd['tu_assignment'].uniform(0,(2**layers)-1)
             k = 0
             while rnd > (2**(k+1))-1:
                 k += 1
@@ -553,6 +606,42 @@ class Network:
                 self.graph.subgraph(range(len(self.nodes))),
                 seed=self.seed)
 
+    def getPowerConsumptionArray(self, tnam, **kwargs):
+        cpu_array = np.sum(self.getTaskNodeCPUUsageMatrix(tnam), axis=0)
+        mem_array = np.sum(self.getTaskNodeMemoryMatrix(tnam), axis=0)
+
+        pwc_array = np.zeros(len(self.nodes), np.float64)
+        for n in range(tnam.shape[1]):
+            pw_min = self.nodes[n].min_power
+
+            # If no task assigned, can turn off node
+            if mem_array[n] > 0:
+                pwc_array[n] += pw_min
+            else:
+                continue
+
+            # Calculate memory power consumption
+            pw_mem_r = self.nodes[n].mem_power_ratio
+            node_memory = self.nodes[n].memory
+            total_task_memory = mem_array[n]
+
+            pwc_array[n] += pw_min * pw_mem_r * (total_task_memory / node_memory)
+
+            # Calculate CPU power consumption
+            pw_cpu_r = self.nodes[n].cpu_power_ratio
+            xp, fp = NODE_CPU_PW_MODEL_LIST[self.nodes[n].cpu_power_model]
+            n_cpus = self.nodes[n].cpus
+            total_cpu_consumption = cpu_array[n]
+            pwc_array[n] += np.interp(
+                    total_cpu_consumption,
+                    n_cpus * xp,
+                    fp * pw_min * pw_cpu_r)
+
+        return pwc_array
+
+    def getTotalPowerConsumption(self, tnam, **kwargs):
+        return np.sum(self.getPowerConsumptionArray(tnam, **kwargs))
+
     # Dataclasses
     def getUser(self, user_id):
         return self.users[user_id]
@@ -644,6 +733,12 @@ class Network:
                 tasks[tid] += un_dist_m[tu_nonzeros[1][uid], tn_nonzeros[1][i]]
 
         return tasks
+
+    def getTaskCPUUsageArray(self):
+        return [t.cpu_usage for t in self.tasks]
+
+    def getNodeCPUArray(self):
+        return [n.cpus for n in self.nodes]
     
     def getTaskHopsArray(self, m):
         """Returns hops of tasks to their respective users given a
@@ -666,6 +761,14 @@ class Network:
                 tasks[tid] += un_hops_m[tu_nonzeros[1][uid], tn_nonzeros[1][i]]
 
         return tasks
+
+    def getMinPowerConsumptionArray(self):
+        return np.array([n.min_power for n in self.nodes])
+
+    def getMaxPowerConsumptionArray(self):
+        return np.array([
+            n.min_power * (1 + n.cpu_power_ratio + n.mem_power_ratio)
+            for n in self.nodes])
 
     # NumPy matrices
     def getTaskUserAssignmentMatrix(self):
@@ -885,6 +988,24 @@ class Network:
         
         return mm
 
+    def getTaskNodeCPUUsageMatrix(self, tnam):
+        """
+        Returns a task/node CPU usage matrix given a task/node assignment matrix
+        """
+        pcm = np.zeros((len(self.tasks), len(self.nodes)), dtype=np.float64)
+        if tnam is not None:
+            t_cpu_v = self.getTaskCPUUsageArray()
+
+            # Find node of each task
+            tn_nonzeros = np.nonzero(tnam)
+
+            for i in range(len(tn_nonzeros[0])):
+                tid = tn_nonzeros[0][i]
+                nid = tn_nonzeros[1][i]
+                pcm[tid, nid] += t_cpu_v[tid]
+
+        return pcm
+
 
     # MANAGEMENT
     # ==========================================================================
@@ -930,8 +1051,9 @@ class Network:
         elif obj == OBJ_LIST[4]:
             f_min = 0.
             f_max = 0.25
-        #elif obj == OBJ_LIST[5]:
-        #    pass
+        elif obj == OBJ_LIST[5]:
+            f_min = 0.
+            f_max = np.sum(self.getMaxPowerConsumptionArray())
         #elif obj == OBJ_LIST[6]:
         #    pass
         #elif obj == OBJ_LIST[7]:
@@ -954,8 +1076,8 @@ class Network:
             return self.getNodeOccupationRatio(tnam, **kwargs)
         elif obj == OBJ_LIST[4]:
             return self.getNodeOccupationVariance(tnam, **kwargs)
-        #elif obj == OBJ_LIST[5]:
-        #    pass
+        elif obj == OBJ_LIST[5]:
+            return self.getTotalPowerConsumption(tnam, **kwargs)
         #elif obj == OBJ_LIST[6]:
         #    pass
         #elif obj == OBJ_LIST[7]:
@@ -965,7 +1087,6 @@ class Network:
         #elif obj == OBJ_LIST[9]:
         #    pass
 
-
 if __name__ == '__main__':
     # Use 'generate' subparser for testing
 
@@ -973,4 +1094,18 @@ if __name__ == '__main__':
     random.seed(configs.seed)
 
     ntw = Network(configs)
+
+    print(ntw.getMinPowerConsumptionArray())
+    print(ntw.getMaxPowerConsumptionArray())
+
+    tnam = np.array([
+            [
+                1 if random.random() < 0.2 else 0
+                for n in range(configs.n_nodes)
+            ] for t in range(configs.n_tasks)
+        ])
+    print(tnam)
+    print(ntw.getTaskNodeCPUUsageMatrix(tnam))
+    print(ntw.getTaskNodeMemoryMatrix(tnam))
+    print(ntw.getPowerConsumptionArray(tnam))
 

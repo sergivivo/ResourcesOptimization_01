@@ -11,65 +11,57 @@ from pymoo.indicators.hv  import HV
 def S(pf=None):
     def indicator(solution):
         n = len(solution)
-        sol_ord = solution[
-                np.lexsort((solution[:,1],solution[:,0]))
-            ]
-        d = np.zeros(len(solution), dtype=np.float64)
-        for i in range(len(sol_ord)):
-            d_min = 10000.
+        d_arr = np.array([
+                min([
+                        np.linalg.norm(x-y)
+                        for x in solution
+                        if not np.array_equal(x, y)
+                    ])
+                for y in solution
+            ])
 
-            # Check two nearest neighbours and get the smaller value
-            if i-1 >= 0:
-                d_new = np.linalg.norm(sol_ord[i] - sol_ord[i-1])
-                if d_min > d_new:
-                    d_min = d_new
+        d_mean = np.average(d_arr)
 
-            if i+1 < len(sol_ord):
-                d_new = np.linalg.norm(sol_ord[i] - sol_ord[i+1])
-                if d_min > d_new:
-                    d_min = d_new
-
-            d[i] = d_min
-
-        d_mean = np.average(d)
-
-        return np.sqrt(sum([(d[i]-d_mean)**2 for i in range(n)]) / n)
+        return np.sqrt(sum([(d_arr[i]-d_mean)**2 for i in range(n)]) / n)
     
     # Just as a way to give same format as other indicator functions
     return indicator
 
-def STE(pf):
+def STE(pf=None):
     def indicator(solution):
         # Spacing
         n = len(solution)
-        sol_ord = solution[
-                np.lexsort((solution[:,1],solution[:,0]))
-            ]
-        d = np.zeros(len(solution), dtype=np.float64)
-        for i in range(len(sol_ord)):
-            d_min = 10000.
+        d_arr = np.array([
+                min([
+                        np.linalg.norm(x-y)
+                        for x in solution
+                        if not np.array_equal(x, y)
+                    ])
+                for y in solution
+            ])
 
-            # Check two nearest neighbours and get the smaller value
-            if i-1 >= 0:
-                d_new = np.linalg.norm(sol_ord[i] - sol_ord[i-1])
-                if d_min > d_new:
-                    d_min = d_new
+        d_mean = np.average(d_arr)
 
-            if i+1 < len(sol_ord):
-                d_new = np.linalg.norm(sol_ord[i] - sol_ord[i+1])
-                if d_min > d_new:
-                    d_min = d_new
-
-            d[i] = d_min
-
-        d_mean = np.average(d)
-
-        spacing = sum([(d[i]-d_mean)**2 for i in range(n)]) / (n-1)
+        spacing = sum([(d_arr[i] - d_mean)**2 for i in range(n)]) / (n-1)
 
         # Extent (considering there are only two objectives)
-        f1_min, f1_max = np.min(solution[:,0]), np.max(solution[:,0])
-        f2_min, f2_max = np.min(solution[:,1]), np.max(solution[:,1])
-        extent = np.abs(f1_max - f1_min) + np.abs(f2_max - f2_min)
+        f_min = np.array([
+                min([
+                        solution[i,j]
+                        for i in range(solution.shape[0])
+                    ])
+                for j in range(solution.shape[1])
+            ])
+
+        f_max = np.array([
+                max([
+                        solution[i,j]
+                        for i in range(solution.shape[0])
+                    ])
+                for j in range(solution.shape[1])
+            ])
+
+        extent = np.sum(np.abs(f_max - f_min))
 
         return spacing / extent
 
@@ -86,9 +78,11 @@ INDICATORS = {
 
 
 def get_table(configs):
+    n_obj = configs.n_objectives
+
     alg_solutions = []
     for f in configs.input:
-        solutions = get_solution_array(f)
+        solutions = get_solution_array(f, n_obj=n_obj)
         alg_solutions.append([
                 np.unique(s, axis=0) for s in solutions
             ]) # filter repeated results
@@ -100,28 +94,46 @@ def get_table(configs):
 
     # Values needed for normalization
     if not configs.network:
-        o1_min = min([np.min(g[:,0]) for s in alg_solutions for g in s])
-        o2_min = min([np.min(g[:,1]) for s in alg_solutions for g in s])
-        o1_max = max([np.max(g[:,0]) for s in alg_solutions for g in s])
-        o2_max = max([np.max(g[:,1]) for s in alg_solutions for g in s])
+        o_min = np.array([
+                min([
+                    np.min(g[:,o])
+                    for s in alg_solutions
+                    for g in s
+                ])
+                for o in range(n_obj)
+            ])
+
+        o_max = np.array([
+                max([
+                    np.max(g[:,o])
+                    for s in alg_solutions
+                    for g in s
+                ])
+                for o in range(n_obj)
+            ])
+
     else:
+        # Improve for N dimensions and objective choice
         import pickle
         ntw = pickle.load(configs.network)
-        o1_min = ntw.getTasksMinAverageDistanceToUser_v2()
-        o1_max = ntw.getTasksMaxAverageDistanceToUser_v2()
-        o2_min = ntw.getMinimumNNodesNeeded()
-        o2_max = ntw.getNNodes()
+
+        o_min_lst, o_max_lst = [], []
+        for o in range(n_obj):
+            o_min_aux, o_max_aux = ntw.getObjectiveBounds(configs.objectives[o])
+            o_min_lst.append(o_min_aux)
+            o_max_lst.append(o_max_aux)
+
+        o_min, o_max = np.array(o_min_lst), np.array(o_max_lst)
 
     # Normalization of everything
     for s in range(len(alg_solutions)): # for each algorithm given
         for g in range(len(alg_solutions[s])): # for each generation
-            alg_solutions[s][g][:,0] = \
-                    (alg_solutions[s][g][:,0] - o1_min) / (o1_max - o1_min)
-            alg_solutions[s][g][:,1] = \
-                    (alg_solutions[s][g][:,1] - o2_min) / (o2_max - o2_min)
+            for o in range(n_obj):
+                alg_solutions[s][g][:,o] = \
+                        (alg_solutions[s][g][:,o] - o_min[o]) / (o_max[o] - o_min[o])
 
-    pf[:,0] = (pf[:,0] - o1_min) / (o1_max - o1_min)
-    pf[:,1] = (pf[:,1] - o2_min) / (o2_max - o2_min)
+    for o in range(n_obj):
+        pf[:,o] = (pf[:,o] - o_min[o]) / (o_max[o] - o_min[o])
 
     # Pymoo performance indicators
     string = '{: <12}'.format('Algorithm')
@@ -148,7 +160,7 @@ def get_table(configs):
                 string += '{: <6}'.format(gen+1)
             for name, ind_c in INDICATORS.items():
                 if name == 'HV':
-                    ind = ind_c([1,1])
+                    ind = ind_c([1] * n_obj)
                 else:
                     ind = ind_c(pf)
                 solution = ind(alg_s[gen])

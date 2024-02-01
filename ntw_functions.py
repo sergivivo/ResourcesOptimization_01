@@ -3,7 +3,7 @@ from itertools import combinations, groupby
 import random
 import numpy as np
 
-def gnp_random_connected_graph_weighted(n, p, minw=0., maxw=1., roundw=1):
+def gnp_random_connected_graph_weighted(n, p, minw=0., maxw=1., roundw=1, rnd=random.Random()):
     """
     Generates a random undirected graph, similarly to an Erdős-Rényi 
     graph, but enforcing that the resulting graph is connected
@@ -16,22 +16,22 @@ def gnp_random_connected_graph_weighted(n, p, minw=0., maxw=1., roundw=1):
     G.add_nodes_from(range(n))
     for _, node_edges in groupby(edges, key=lambda x: x[0]):
         node_edges = list(node_edges)
-        random_edge = random.choice(node_edges)
-        G.add_edge(*random_edge, weight=round(random.uniform(minw, maxw), roundw))
+        random_edge = rnd.choice(node_edges)
+        G.add_edge(*random_edge, weight=round(rnd.uniform(minw, maxw), roundw))
         for e in node_edges:
-            if random.random() < p:
-                G.add_edge(*e, weight=round(random.uniform(minw, maxw), roundw))
+            if rnd.random() < p:
+                G.add_edge(*e, weight=round(rnd.uniform(minw, maxw), roundw))
     return G
 
-def barabasi_albert_weighted_graph(n, m, seed=None, minw=0., maxw=1., roundw=1):
+def barabasi_albert_weighted_graph(n, m, seed=None, minw=0., maxw=1., roundw=1, rnd=random.Random()):
     # TODO: generar layout y utilizarlo para calcular distancias y generar comunidades
     G = nx.barabasi_albert_graph(seed=seed, n=n, m=m)
     for orig, dest in G.edges():
-        G[orig][dest]['weight'] = round(random.uniform(minw, maxw), roundw)
+        G[orig][dest]['weight'] = round(rnd.uniform(minw, maxw), roundw)
     return G
 
-def get_pareto_distribution(shape, size, mode):
-    return (np.random.pareto(shape, size) + 1) * mode
+def get_pareto_distribution(shape, size, mode, rng_obj=np.random.default_rng()):
+    return (rng_obj.pareto(shape, size) + 1) * mode
 
 def truncate_array(array, step_size=1, step_array=None):
     copy = array.copy()

@@ -145,6 +145,25 @@ arrange() {
 		-o "$SOL_PREFIX/$SOL_PATH/$SOL_NAME"
 }
 
+arrange_all(){
+	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
+
+	ALG_FILES=()
+	i=1
+	for ALG in ${ALGORITHMS[*]}; do
+		SOL_NAME="$(get_solution_filename $ALG 'A' $POP_SIZE $N_GEN $SAMPLING_VERSION $CROSSOVER_VERSION $MUTATION_VERSION $MUTATION_PROB_MOVE $MUTATION_PROB_CHANGE $MUTATION_PROB_BINOMIAL)"
+		ALG_FILES[$i]="$SOL_PREFIX/$SOL_PATH/$SOL_NAME"
+		i=$((i+1))
+	done
+
+	SOL_NAME="$(get_solution_filename "ALL" "A" $POP_SIZE $N_GEN $SAMPLING_VERSION $CROSSOVER_VERSION $MUTATION_VERSION $MUTATION_PROB_MOVE $MUTATION_PROB_CHANGE $MUTATION_PROB_BINOMIAL)"
+	python3 main.py arrange \
+		--n_objectives $N_OBJECTIVES \
+		-i ${ALG_FILES[*]} \
+		-o "$SOL_PREFIX/$SOL_PATH/$SOL_NAME"
+}
+
 solution_to_ref_points() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
 	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $REF_POINTS_ALGORITHM ${OBJECTIVES[@]})"

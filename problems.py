@@ -206,7 +206,7 @@ class Problem01v3(ElementwiseProblem):
         super().__init__(
                 n_var = 1,
                 n_obj = len(self.obj_list) if multimode else 1,
-                n_ieq_constr = 1)
+                n_ieq_constr = 2)
 
     def _evaluate(self, x, out, *args, **kwargs):
         matrix = x[0]
@@ -224,6 +224,8 @@ class Problem01v3(ElementwiseProblem):
         # Dicho de otro modo, al restar la memoria ocupada con la capacidad,
         # debe ser menor o igual a cero
 
+        g2 = np.all(np.sum(self.network.getTaskNodeCPUUsageMatrix(matrix),axis=0) <= self.network.getNodeCPUArray())
+
         if self.multimode:
             out['F'] = f_norm
             out['F_original'] = f_original
@@ -231,7 +233,7 @@ class Problem01v3(ElementwiseProblem):
             out['F'] = sum([l*f for l, f in zip(self.l, self.f_norm)])
             out['F_original'] = f_original
 
-        out['G'] = [g1]
+        out['G'] = [g1, g2]
 
 
 

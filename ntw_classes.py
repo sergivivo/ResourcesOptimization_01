@@ -11,6 +11,11 @@ class Node:
     id: int = field(init=False)
     memory: float = field(init=False)
     max_tasks: int
+    cpus: int
+    min_power: float
+    cpu_power_model: int
+    cpu_power_ratio: float
+    mem_power_ratio: float
     #tasks: List[int] = field(init=False, default_factory=list)
 
     def __post_init__(self):
@@ -43,6 +48,7 @@ class Task:
     memory: float
     user_id: int
     node_id: int = field(init=False, default=-1)
+    cpu_usage: float
     #nodes: List[int] = field(init=False, default_factory=list)
 
     def __post_init__(self):

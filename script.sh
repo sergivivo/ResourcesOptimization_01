@@ -56,6 +56,8 @@ source script_functions.sh
 
 #TODO: https://scikit-learn.org/stable/auto_examples/linear_model/plot_polynomial_interpolation.html
 
+generate
+
 for ALGORITHM in ${ALGORITHMS[*]}; do
 	echo "$ALGORITHM"
 
@@ -73,4 +75,5 @@ for ALGORITHM in ${ALGORITHMS[*]}; do
 
 done
 
-#solution_to_ref_points 0.8
+#arrange_all
+#solution_to_ref_points 0.9
