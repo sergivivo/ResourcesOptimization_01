@@ -6,22 +6,29 @@ RANDOM_KEYS = [
         'graph_nodes',
         'graph_weights',
         'node_memory',
+        'node_cpu',
         'task_memory',
         'tu_assignment',
         'node_power',
-        'task_cpu_usage'
+        'task_cpu_usage',
+        'user_data'
     ]
 
 # Network generation
 E = 2
 MIN_WEIGHT = 5.
 MAX_WEIGHT = 20.
+EDGE_MIN_LATENCY = 5.
+EDGE_MAX_LATENCY = 20.
+EDGE_MIN_BANDWIDTH = 500.
+EDGE_MAX_BANDWIDTH = 8000.
 
 N_NODES = 10
 NODE_MEMORY_CHOICE = [512, 1024, 2048, 4096]
 NODE_MEMORY_PARETO_SHAPE = 1.16
 NODE_MAX_TASKS_CHOICE = list(range(100,101))
 NODE_N_CPUS_CHOICE = [1, 2, 4, 6, 8]
+NODE_N_CPUS_PARETO_SHAPE = 1.16
 
 # Power consumption
 NODE_MIN_PW_CHOICE = np.arange(3.5, 20.5, 0.5)
@@ -45,6 +52,10 @@ TASK_MAX_CPU_USAGE = 1.0
 
 N_USERS = 3
 P = 0.3
+
+USER_REQUEST_SIZE = 50
+USER_MIN_PPS = 0.2
+USER_MAX_PPS = 5.0
 
 GROUP_SIZE = 5
 POPULARITY = 0.5
@@ -74,7 +85,8 @@ OBJ_LIST = [
         'hops',
         'occupation',
         'occ_variance',
-        'pw_consumption'
+        'pw_consumption',
+        'ntw_utilization'
     ]
 
 OBJ_DESCRIPTION = [
@@ -83,7 +95,8 @@ OBJ_DESCRIPTION = [
         'Mean hops to service',
         'Mean node occupation ratio',
         'Node occupation ratio variance',
-        'Power consumption'
+        'Power consumption',
+        'Network utilization'
     ]
 
 ALGORITHMS = [

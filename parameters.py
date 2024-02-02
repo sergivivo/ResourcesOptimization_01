@@ -28,6 +28,8 @@ parser_generate = subparsers.add_parser('generate', help='Generate the network')
 parser_generate.add_argument('-e', '--edges', type=int, default=E, help='Number of edges to attach from a new node to existing nodes. Conflicts with --probability.')
 parser_generate.add_argument('--min_weight', type=float, default=MIN_WEIGHT, help='Minimum weight that an edge can have')
 parser_generate.add_argument('--max_weight', type=float, default=MAX_WEIGHT, help='Maximum weight that an edge can have')
+parser_generate.add_argument('--edge_min_bandwidth', type=float, default=EDGE_MAX_BANDWIDTH, help='Minimum bandwidth that an edge can have')
+parser_generate.add_argument('--edge_max_bandwidth', type=float, default=EDGE_MIN_BANDWIDTH, help='Minimum bandwidth that an edge can have')
 
 parser_generate.add_argument('--n_nodes', type=int, default=N_NODES, help='Number of server nodes in the network')
 
@@ -38,6 +40,9 @@ parser_generate.add_argument('--task_min_cpu_usage', type=float, default=TASK_MI
 parser_generate.add_argument('--task_max_cpu_usage', type=float, default=TASK_MAX_CPU_USAGE, help='Maximum CPU usage that a task requires to execute')
 
 parser_generate.add_argument('--n_users', type=int, default=N_USERS, help='Number of users in the network')
+parser_generate.add_argument('--user_request_size', type=int, default=USER_REQUEST_SIZE, help='Size of user request to be sended/received')
+parser_generate.add_argument('--user_min_pps', type=int, default=USER_MIN_PPS, help='Minimum petitions per second')
+parser_generate.add_argument('--user_max_pps', type=int, default=USER_MAX_PPS, help='Maximum petitions per second')
 
 parser_generate.add_argument('-p', '--probability', type=float, choices=[Range(0.0, 1.0)], default=P, help='Probability of a user requesting a service. This probability will only take effect if communities option is not enabled.')
 
@@ -187,8 +192,10 @@ configs.node_min_pw_choice = NODE_MIN_PW_CHOICE
 configs.node_cpu_pw_r_choice = NODE_CPU_PW_R_CHOICE
 configs.node_mem_pw_r_choice = NODE_CPU_PW_R_CHOICE
 configs.node_memory_pareto_shape = NODE_MEMORY_PARETO_SHAPE
+configs.node_n_cpus_pareto_shape = NODE_N_CPUS_PARETO_SHAPE
 configs.task_memory_pareto_shape = TASK_MEMORY_PARETO_SHAPE
 configs.task_cpu_usage_pareto_shape = TASK_CPU_USAGE_PARETO_SHAPE
+configs.user_request_size = USER_REQUEST_SIZE
 
 if __name__ == '__main__':
     print(configs)

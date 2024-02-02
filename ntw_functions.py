@@ -23,11 +23,12 @@ def gnp_random_connected_graph_weighted(n, p, minw=0., maxw=1., roundw=1, rnd=ra
                 G.add_edge(*e, weight=round(rnd.uniform(minw, maxw), roundw))
     return G
 
-def barabasi_albert_weighted_graph(n, m, seed=None, minw=0., maxw=1., roundw=1, rnd=random.Random()):
+def barabasi_albert_weighted_graph(n, m, seed=None, data=None, minw=0., maxw=1., roundw=1, rnd=random.Random()):
     # TODO: generar layout y utilizarlo para calcular distancias y generar comunidades
     G = nx.barabasi_albert_graph(seed=seed, n=n, m=m)
     for orig, dest in G.edges():
         G[orig][dest]['weight'] = round(rnd.uniform(minw, maxw), roundw)
+        G[orig][dest]['data'] = data
     return G
 
 def get_pareto_distribution(shape, size, mode, rng_obj=np.random.default_rng()):
