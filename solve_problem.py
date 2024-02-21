@@ -127,6 +127,7 @@ def solve(ntw, configs):
 
         elif configs.algorithm == 'SMSEMOA':
             algorithm = SMSEMOA(
+                    pop_size = configs.pop_size,
                     sampling=my_sampling,
                     crossover=my_crossover,
                     mutation=my_mutation,

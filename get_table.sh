@@ -1,60 +1,59 @@
 #!/bin/bash
 
-SEED=722
+source script_constants.sh
+source script_functions.sh
 
-POP_SIZE=500
-N_GEN=200
-MUTATION_PROB=0.1
+FILE_LEGEND=${ALGORITHMS[*]}
+TITLE="algorithms"
 
-NODES=40
-TASKS=60
-USERS=20
+NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
+REF_PATH="$(get_ref_points_path $NTW_NAME $N_REPLICAS ${OBJECTIVES[@]})"
+REF_NAME="$(get_ref_points_filename $REF_POINTS_ALGORITHM)"
+REF_FILE="$SOL_PREFIX/$REF_PATH/$REF_NAME"
+if [ -f "$REF_FILE" ]; then
+	REF_POINTS_STRING="$(cat $REF_FILE | tr -d '[:space:]')"
+	REF_POINTS_OPT=--ref_points
+else
+	REF_POINTS_STRING=
+	REF_POINTS_OPT=
+fi
+
+SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
 
 PREFIX1="data/solutions/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS"
 PREFIX2="data/analysis/P$POP_SIZE-G$N_GEN/M$MUTATION_PROB/$NODES-$TASKS-$USERS"
 
-mkdir -p "$PREFIX2"
+mkdir -p "$ALY_PREFIX/$SOL_PATH"
 
-for SEED2 in {1..4}; do
-python3 main.py --seed $SEED analyze \
-	-i \
-		"$PREFIX1/NSGA2_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		"$PREFIX1/NSGA3_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		"$PREFIX1/UNSGA3_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		"$PREFIX1/CTAEA_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		"$PREFIX1/SMSEMOA_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-		"$PREFIX1/RVEA_"$SEED"-"$SEED2"_"$NODES"-"$TASKS"-"$USERS"_"$POP_SIZE"-"$N_GEN \
-	--alg_name \
-		"NSGA2" \
-		"NSGA3" \
-		"UNSGA3" \
-		"CTAEA" \
-		"SMSEMOA" \
-		"RVEA" \
-	--ref_points \
-		$(cat "$PREFIX1/ref_points/rp_ILP_"$SEED"-1") \
-	--network \
-		"data/network/ntw_"$SEED"_$NODES-$TASKS-$USERS" \
-	--output \
-		"$PREFIX2/table_"$SEED"-"$SEED2"_$NODES-$TASKS-$USERS"
+for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
+	FILES=$(get_algorithm_files)
+	python3 main.py --seed $SEED analyze \
+		--objectives ${OBJECTIVES[*]} \
+		--n_objectives $N_OBJECTIVES $REF_POINTS_OPT $REF_POINTS_STRING \
+		-i $FILES \
+		--alg_name $FILE_LEGEND \
+		--network "$NTW_PREFIX/$NTW_NAME" \
+		--output "$ALY_PREFIX/$SOL_PATH/table_$SEED2"
 done
 
-output="$PREFIX2/table_"$SEED"-M_$NODES-$TASKS-$USERS"
+output="$ALY_PREFIX/$SOL_PATH/table_M"
 rm -f $output
 
-head -n1 "$PREFIX2/table_"$SEED"-1_$NODES-$TASKS-$USERS" >> $output
+# Print header (first row)
+head -n1 "$ALY_PREFIX/$SOL_PATH/table_1" >> $output
 
-for i in {2..7}; do
+for i in $(seq 2 1 $((N_ALGORITHMS+1))); do
 
-	printf '%-12s' $(cat "$PREFIX2/table_"$SEED"-1_$NODES-$TASKS-$USERS" | sed -n "${i}p" | awk '{print $1}') >> $output
+	# Print each algorithm's name (first column)
+	printf '%-12s' $(cat "$ALY_PREFIX/$SOL_PATH/table_1" | sed -n "${i}p" | awk '{print $1}') >> $output
 
 	for j in {2..6}; do
 
 		result=0.0
 
-		for SEED2 in {1..4}; do
+		for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
 
-			cell=$(cat "$PREFIX2/table_"$SEED"-"$SEED2"_$NODES-$TASKS-$USERS" | sed -n "${i}p" | awk '{print $'$j'}')
+			cell=$(cat "$ALY_PREFIX/$SOL_PATH/table_$SEED2" | sed -n "${i}p" | awk '{print $'$j'}')
 			result=$(echo "scale=10; $result + $cell" | bc)
 
 		done

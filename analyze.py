@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import datetime
 from file_utils import parse_file, get_solution_array
 
 from pymoo.indicators.gd  import GD
@@ -68,6 +69,26 @@ def STE(pf=None):
     # Just as a way to give same format as other indicator functions
     return indicator
 
+def mean_time(date_a, time_a):
+    FORMAT_STR = '%Y-%m-%d %H:%M:%S.%f'
+    acc = 0.
+    next_dt = datetime.datetime.strptime(
+            '{} {}'.format(date_a[0], time_a[0]),
+            FORMAT_STR
+        )
+    for date, time in zip(date_a, time_a):
+        prev_dt = next_dt
+        next_dt = datetime.datetime.strptime(
+                '{} {}'.format(date,time),
+                FORMAT_STR
+            )
+        acc += (next_dt - prev_dt).total_seconds()
+
+    return acc / (len(date_a) - 1)
+
+def solutions():
+    pass
+
 INDICATORS = {
     'GD': GD,
     'IGD': IGD,
@@ -76,21 +97,25 @@ INDICATORS = {
     'STE': STE
 }
 
-
 def get_table(configs):
     n_obj = configs.n_objectives
 
     alg_solutions = []
+    alg_ts_dates = []
+    alg_ts_times = []
     for f in configs.input:
-        solutions = get_solution_array(f, n_obj=n_obj)
+        ts_date_a, ts_time_a, solutions = get_solution_array(f, n_obj=n_obj, timestamps=True)
         alg_solutions.append([
                 np.unique(s, axis=0) for s in solutions
             ]) # filter repeated results
+        alg_ts_dates.append(ts_date_a)
+        alg_ts_times.append(ts_time_a)
 
     alg_names = configs.alg_names if configs.alg_names else []
     alg_names += [''] * (len(alg_solutions) - len(alg_names))
 
-    pf = np.unique(np.array(configs.ref_points), axis=0)
+    #pf = np.unique(np.array(configs.ref_points), axis=0)
+    pf = np.zeros((1, n_obj))
 
     # Values needed for normalization
     if not configs.network:
@@ -113,7 +138,6 @@ def get_table(configs):
             ])
 
     else:
-        # Improve for N dimensions and objective choice
         import pickle
         ntw = pickle.load(configs.network)
 
@@ -132,11 +156,11 @@ def get_table(configs):
                 alg_solutions[s][g][:,o] = \
                         (alg_solutions[s][g][:,o] - o_min[o]) / (o_max[o] - o_min[o])
 
-    for o in range(n_obj):
-        pf[:,o] = (pf[:,o] - o_min[o]) / (o_max[o] - o_min[o])
+    #for o in range(n_obj):
+    #    pf[:,o] = (pf[:,o] - o_min[o]) / (o_max[o] - o_min[o])
 
     # Pymoo performance indicators
-    string = '{: <12}'.format('Algorithm')
+    string = '{: <15}'.format('Algorithm')
 
     gen_step = configs.gen_step
     if gen_step == 0:
@@ -145,23 +169,31 @@ def get_table(configs):
         string += '{: <6}'.format('Gen')
         last_gen = False
 
+    string += '{: <15}'.format('Mean_time')
+    string += '{: <15}'.format('Solutions')
+
     for name in INDICATORS.keys():
         string += '{: <15}'.format(name)
 
     string += '\n'
 
-    for alg_n, alg_s in zip(alg_names, alg_solutions):
+    for alg_n, alg_s, alg_tsd, alg_tst in zip(alg_names, alg_solutions, alg_ts_dates, alg_ts_times):
         if last_gen:
             gen_step = len(alg_s)
 
         for gen in range((len(alg_s)-1) % gen_step, len(alg_s), gen_step):
-            string += '{: <12}'.format(alg_n)
+            string += '{: <15}'.format(alg_n)
             if not last_gen:
-                string += '{: <6}'.format(gen+1)
+                string += '{: <15}'.format(gen+1)
+
+            string += '{: <15}'.format('{:.10f}'.format(mean_time(alg_tsd, alg_tst)))
+            string += '{: <15}'.format('{:.3f}'.format(len(alg_s[gen])))
             for name, ind_c in INDICATORS.items():
+                #print(name)
                 if name == 'HV':
-                    ind = ind_c([1] * n_obj)
+                    ind = ind_c(np.ones((n_obj)))
                 else:
+                    # GD and IGD uses Pareto front
                     ind = ind_c(pf)
                 solution = ind(alg_s[gen])
                 string += '{: <15}'.format('{:.10f}'.format(solution))

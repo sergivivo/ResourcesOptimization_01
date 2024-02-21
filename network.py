@@ -134,19 +134,23 @@ class Network:
                         1,
                         conf.task_min_cpu_usage,
                         rng_obj=self.np_rnd['task_cpu_usage']
-                    ).clip(max=conf.task_max_cpu_usage)[0], 3)
+                    ).clip(max=conf.task_max_cpu_usage)[0], 3),
+                request_size = int(
+                    get_pareto_distribution(
+                        conf.task_request_size_pareto_shape,
+                        1,
+                        conf.task_min_request_size,
+                        rng_obj=self.np_rnd['task_requests']
+                        ).clip(max=conf.task_max_request_size)[0])
             ) for _ in range(conf.n_tasks)]
 
         # Generate the management data for the users
         self.USER_REQUEST_SIZE = conf.user_request_size
         self.users = [User(
-                pps = self.rnd['user_data'].uniform(
-                    conf.user_min_pps, conf.user_max_pps)
+                rps = self.rnd['user_data'].uniform(
+                    conf.user_min_rps, conf.user_max_rps)
             ) for _ in range(conf.n_users)]
         self._addUsers(conf.min_weight, conf.max_weight)
-
-        # Link between devices data for the network
-        self._generateLinkData(conf.edge_min_bandwidth, conf.edge_max_bandwidth)
 
         # Generate the user access to each service. A user can access many
         # services and a service can be accessed by many users, so the resulting
@@ -188,6 +192,23 @@ class Network:
             tu_matrix = self._generateTaskUserAssignmentMatrix_v2(p=conf.probability)
 
         self.task_user = np.transpose(np.nonzero(tu_matrix))
+
+        # Requests per second
+        tu_rps_matrix = np.random.rand(conf.n_tasks, conf.n_users)
+        tu_rps_matrix *= tu_matrix
+
+        for uid in range(conf.n_users):
+            tu_rps_matrix[:,uid] /= np.sum(tu_rps_matrix[:,uid])
+            tu_rps_matrix[:,uid] *= self.users[uid].rps
+
+        self.tu_rps = {
+                (tid, uid): tu_rps_matrix[tid, uid]
+                for tid, uid in self.task_user
+            }
+
+        # Link between devices data for the network
+        self._generateLinkData(conf.edge_min_bandwidth, conf.edge_max_bandwidth)
+
 
     def _addUsers(self, minw=0., maxw=1., roundw=1):
         """
@@ -431,10 +452,35 @@ class Network:
         return tu_prob_matrix
 
     def _generateLinkData(self, minbw, maxbw):
-        self.links = {edge:
-                Link(bandwidth = round(self.rnd['graph_weights'].uniform(
-                    minbw, maxbw), 2)
-            ) for edge in self.graph.edges}
+        NODES, USERS = len(self.nodes), len(self.users)
+        self.links = {edge: Link() for edge in self.graph.edges}
+
+        bw_list = [
+                round(self.rnd['graph_weights'].uniform(minbw, maxbw), 2)
+                for _ in self.graph.edges
+            ]
+
+        bw_sorted = sorted(bw_list)
+        
+        # Calculate network traffic to give more bandwidth to more used links
+        edge_acc_dict = {edge: 0.0 for edge in self.graph.edges}
+        nw_paths = self.getNetworkPaths()
+        for tid, uid in self.task_user:
+            path = self.getNetworkPathEdgesFromNode(uid + NODES, nw_paths=nw_paths)
+            for a, b in path:
+                orig, dest = sorted((a,b))
+                edge_acc_dict[orig,dest] += \
+                        self.tu_rps[tid, uid] * self.tasks[tid].request_size
+
+        edge_acc_sorted = sorted(edge_acc_dict.items(), key=lambda e: e[1])
+
+        unodes = set(range(NODES, NODES+USERS))
+        for i in range(len(bw_sorted)):
+            edge, weight = edge_acc_sorted[i]
+            if set(edge) & unodes:
+                self.links[edge].bandwidth = bw_sorted[i] if weight < bw_sorted[i] else weight
+            else:
+                self.links[edge].bandwidth = bw_sorted[i]
 
     def displayGraph(self, seed=1):
         """
@@ -471,6 +517,30 @@ class Network:
             lst = list(cm_list[i])
             nx.draw_networkx_nodes(self.graph, pos, nodelist=lst, node_color=cmap(gradient[i]))
         """
+
+        # Network Utilization
+
+        plt.show()
+
+    def displayGraphNetworkUtilization(self, tnam, seed=1):
+        """
+        Display the resulting graph of the network with the server nodes,
+        users and the weights of the connections. Green nodes represent the
+        server nodes, while red nodes represent the users. User's ids start
+        after last server node id.
+        """
+        plt_gnp = plt.subplot(1,1,1)
+
+        pos = nx.spring_layout(self.graph, seed=seed)
+        color = ['lime' if node < len(self.nodes) else 'red' for node in self.graph]
+        nlabels = {
+                i:'{}{}'.format(
+                    'N' if i < len(self.nodes) else 'U',
+                    i if i < len(self.nodes) else i - len(self.nodes))
+                for i in range(len(self.nodes) + len(self.users))
+            }
+        utilization = [v if v < 1. else 1. for v in self.getNetworkUtilizationDictionary(tnam).values()]
+        nx.draw_networkx(self.graph, pos, labels=nlabels, font_size=8, font_weight='bold', node_color=color, width=3.0, edge_color=utilization, edge_cmap=plt.colormaps['magma'])
 
         plt.show()
 
@@ -634,8 +704,13 @@ class Network:
 
         return sumacc / len(self.nodes)
 
-    def getBetweennessCentrality(self):
+    def getBetweennessCentrality(self, weight='weight'):
         return nx.betweenness_centrality(
+                self.graph.subgraph(range(len(self.nodes))),
+                seed=self.seed, weight=weight)
+
+    def getEdgeBetweennessCentrality(self):
+        return nx.edge_betweenness_centrality(
                 self.graph.subgraph(range(len(self.nodes))),
                 seed=self.seed)
 
@@ -676,9 +751,19 @@ class Network:
         return np.sum(self.getPowerConsumptionArray(tnam, **kwargs))
     
     def getNetworkUtilization(self, tnam, **kwargs):
-        return np.average(tuple(
-                self.getNetworkUtilizationDictionary(tnam).values()
-            ))
+        # Function constants
+        OPTION = 'A'
+        SATURATION = 0.3
+
+        nud = self.getNetworkUtilizationDictionary(tnam, **kwargs)
+        nua = np.array(tuple(nud.values()))
+
+        return {
+                'A': np.count_nonzero(nua > SATURATION) / len(self.graph.edges),
+                'B': 0.0,
+                'C': np.average(nua),
+                'D': 0.0
+            }[OPTION]
 
     # Dataclasses
     def getUser(self, user_id):
@@ -711,23 +796,55 @@ class Network:
     # Dictionaries
     def getEdgeWeightDictionary(self):
         return nx.get_edge_attributes(self.graph, 'weight')
+
+    def getNetworkPaths(self, weight='weight'):
+        return dict(nx.all_pairs_dijkstra_path(self.graph, weight=weight))
+
+    def getNetworkPathEdgesFromNode(self, nid, nw_paths=None, excludeUsers=True):
+        NODES, USERS = len(self.nodes), len(self.users)
+        if excludeUsers:
+            users = set([i for i in range(NODES, NODES+USERS) if i != nid])
+        else:
+            users = set()
+
+        if nw_paths is None:
+            nw_paths = self.getNetworkPaths()
+
+        path_list = list(filter(
+                lambda l: len(l) > 1 and not (set(l) & users),
+                nw_paths[nid].values()
+            ))
+
+        for i in range(len(path_list)):
+            for j in range(len(path_list)):
+                if i == j: continue
+                l1, l2 = path_list[i], path_list[j]
+                if l1 == l2[:len(l1)]:
+                    path_list[j] = l2[len(l1)-1:]
+
+        return path_list
     
-    def getNetworkUtilizationDictionary(self, tnam):
+    def getNetworkUtilizationDictionary(self, tnam, undm = None, paths = None, maximize=False, **garbage):
         N_NODES = len(self.nodes)
 
-        paths = dict(nx.all_pairs_shortest_path(self.graph))
-        undm = self.getUserNodeDistanceMatrix()
+        if paths is None: paths = self.getNetworkPaths()
+        if undm is None: undm = self.getUserNodeDistanceMatrix()
 
-        tuam = self.getTaskUserAssignmentMatrix()
-        tuam_nz = np.nonzero(tuam)
         edge_acc_dict = {edge: 0.0 for edge in self.graph.edges}
-        for tid, uid in np.transpose(tuam_nz):
+        for tid, uid in self.task_user:
             nodes = np.flatnonzero(tnam[tid])
-            nid, _ = min([(nid, undm[uid,nid]) for nid in nodes], key=lambda i: i[1])
+            if nodes.size == 0: continue
+            if not maximize:
+                func = min
+            else:
+                # Useful for calculating the worst possible scenario
+                func = max 
+            nid, _ = func([(nid, undm[uid,nid]) for nid in nodes], key=lambda i: i[1])
             path = paths[N_NODES+uid][nid]
+            # For each segment of the path (path[i], path[i+1])
             for i in range(len(path)-1):
                 orig, dest = sorted((path[i], path[i+1]))
-                edge_acc_dict[orig,dest] += self.users[uid].pps * self.USER_REQUEST_SIZE
+                edge_acc_dict[orig,dest] += self.tu_rps[tid,uid] * self.tasks[tid].request_size
 
         for k in edge_acc_dict.keys():
             edge_acc_dict[k] /= self.links[k].bandwidth
@@ -735,7 +852,12 @@ class Network:
         return edge_acc_dict
 
     def getMaxNetworkUtilization(self):
-        return np.sum([l.bandwidth for l in self.links.values()])
+        tnam = np.ones((len(self.tasks),len(self.nodes)), dtype=np.uint8)
+        return self.getNetworkUtilization(tnam, maximize=True)
+
+    def getMinNetworkUtilization(self):
+        tnam = np.ones((len(self.tasks),len(self.nodes)), dtype=np.uint8)
+        return self.getNetworkUtilization(tnam, maximize=False)
 
     # NumPy 1D arrays
     def getTaskUserAssignmentArray(self):
@@ -1117,7 +1239,7 @@ class Network:
             f_min = 0.
             f_max = np.sum(self.getMaxPowerConsumptionArray())
         elif obj == OBJ_LIST[6]:
-            f_min = 0.
+            f_min = self.getMinNetworkUtilization()
             f_max = self.getMaxNetworkUtilization()
         #elif obj == OBJ_LIST[7]:
         #    pass
@@ -1165,14 +1287,23 @@ if __name__ == '__main__':
             ] for t in range(configs.n_tasks)
         ])
 
+    #print(tnam)
+
     # POWER CONSUMPTION ARRAY
-    print(tnam)
-    print(ntw.getTaskNodeCPUUsageMatrix(tnam))
-    print(ntw.getTaskNodeMemoryMatrix(tnam))
-    print(ntw.getPowerConsumptionArray(tnam))
+    #print(ntw.getTaskNodeCPUUsageMatrix(tnam))
+    #print(ntw.getTaskNodeMemoryMatrix(tnam))
+    #print(ntw.getPowerConsumptionArray(tnam))
+    #print()
+
+    # Network Utilization
+    #print(ntw.tu_rps)
+    #print(ntw.getNetworkUtilizationDictionary(tnam).values())
+    #print(ntw.getMinNetworkUtilization())
+    #print(ntw.getNetworkUtilization(tnam))
+    #print(ntw.getMaxNetworkUtilization())
+    #print()
 
     # NODES
-    ntw.displayGraph()
-
-
+    #ntw.displayGraph()
+    ntw.displayGraphNetworkUtilization(tnam)
 

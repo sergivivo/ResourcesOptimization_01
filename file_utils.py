@@ -1,6 +1,6 @@
 import numpy as np
 
-def parse_file(f, n_obj=2):
+def parse_file(f, n_obj=2, timestamps=False):
     """
     Three possible formats for the columns:
         <ts_date> <ts_time> <generation> <o1> ... <on>
@@ -26,11 +26,19 @@ def parse_file(f, n_obj=2):
     else:
         generation = []
 
-    return generation, o
+    if timestamps:
+        return [lst[::columns], lst[1::columns]], generation, o
+    else:
+        return generation, o
 
-def get_solution_array(f, n_obj=2):
+def get_solution_array(f, n_obj=2, timestamps=False):
     solutions = []
-    generation, o = parse_file(f, n_obj)
+    if timestamps:
+        ts, generation, o = parse_file(f, n_obj, timestamps)
+        ts_date_uniq = []
+        ts_time_uniq = []
+    else:
+        generation, o = parse_file(f, n_obj, timestamps)
 
     if len(generation) > 0:
         last_gen = generation[-1]
@@ -44,13 +52,19 @@ def get_solution_array(f, n_obj=2):
                 i, j = generation.index(g), generation.index(g+1)
                 for k in range(n_obj):
                     o_slize[k] = o[k][i:j]
+                if timestamps:
+                    ts_date_uniq.append(ts[0][i])
+                    ts_time_uniq.append(ts[1][i])
             except ValueError:
                 pass
             solutions.append(np.array(o_slize).T)
     else:
         solutions.append(np.array(o).T)
 
-    return solutions
+    if timestamps:
+        return ts_date_uniq, ts_time_uniq, solutions
+    else:
+        return solutions
 
 def solutions_to_string(solutions):
     s = ''

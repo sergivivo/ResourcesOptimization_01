@@ -31,7 +31,7 @@ class User:
     # Attributes
     id: int = field(init=False)
     node_id: int = field(init=False, default=-1)
-    pps: float
+    rps: float
 
     def __post_init__(self):
         """Assign id automatically based on the amount of users generated"""
@@ -50,6 +50,7 @@ class Task:
     user_id: int
     node_id: int = field(init=False, default=-1)
     cpu_usage: float
+    request_size: int
     #nodes: List[int] = field(init=False, default_factory=list)
 
     def __post_init__(self):
@@ -66,7 +67,7 @@ class Link:
     # Attributes
     id: int = field(init=False)
     latency: float = field(init=False)
-    bandwidth: float
+    bandwidth: float = field(init=True, default=0.1)
     length: float = field(init=False)
 
     def __post_init__(self):

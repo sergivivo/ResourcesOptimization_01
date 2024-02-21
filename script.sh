@@ -56,24 +56,83 @@ source script_functions.sh
 
 #TODO: https://scikit-learn.org/stable/auto_examples/linear_model/plot_polynomial_interpolation.html
 
-generate
+NODES=50
+TASKS=50
+USERS=25
 
+#for POP_SIZE in ${POP_SIZES[*]}; do
+#	echo "  POP_SIZE = $POP_SIZE"
 for ALGORITHM in ${ALGORITHMS[*]}; do
-	echo "$ALGORITHM"
+	#echo "  ALGORITHM = $ALGORITHM"
+	#N_ITER=$((
+	#		N_EXECUTIONS % N_PROC == 0 ?
+	#		N_EXECUTIONS / N_PROC :
+	#		N_EXECUTIONS / N_PROC + 1
+	#	))
+	#for ITER in $(seq 1 1 $N_ITER); do
+	#	START=$(((ITER - 1) * N_PROC + 1))
+	#	END=$((
+	#			N_EXECUTIONS <= ITER * N_PROC ?
+	#			N_EXECUTIONS :
+	#			ITER * N_PROC
+	#		))
 
-	for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
-		echo "  $SEED2"
-		solve &
-		pids[${SEED2}]=$!
-	done
+	#	for SEED2 in $(seq $START 1 $END); do
+	#		echo "    $SEED2"
+	#		get_table population &
+	#		pids[${SEED2}]=$!
+	#	done
 
-	for pid in ${pids[*]}; do
-		wait $pid
-	done
+	#	for pid in ${pids[*]}; do
+	#		wait $pid
+	#	done
 
-	arrange
+	#done
+
+	get_table_group population
 
 done
+
+
+#generate
+#
+#for POP_SIZE in $(seq 50 50 300); do
+#	echo "POP_SIZE = $POP_SIZE"
+#
+#	for ALGORITHM in ${ALGORITHMS[*]}; do
+#		echo "  $ALGORITHM"
+#
+#		# Iterations needed for distributing N_EXECUTIONS 
+#		# among N_PROC (max CPU usage control)
+#		N_ITER=$((
+#				N_EXECUTIONS % N_PROC == 0 ?
+#				N_EXECUTIONS / N_PROC :
+#				N_EXECUTIONS / N_PROC + 1
+#			))
+#		for ITER in $(seq 1 1 $N_ITER); do
+#			START=$(((ITER - 1) * N_PROC + 1))
+#			END=$((
+#					N_EXECUTIONS <= ITER * N_PROC ?
+#					N_EXECUTIONS :
+#					ITER * N_PROC
+#				))
+#
+#			for SEED2 in $(seq $START 1 $END); do
+#				echo "    $SEED2"
+#				solve &
+#				pids[${SEED2}]=$!
+#			done
+#
+#			for pid in ${pids[*]}; do
+#				wait $pid
+#			done
+#
+#		done
+#
+#		arrange
+#
+#	done
+#done
 
 #arrange_all
 #solution_to_ref_points 0.9

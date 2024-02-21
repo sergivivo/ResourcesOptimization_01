@@ -28,8 +28,8 @@ parser_generate = subparsers.add_parser('generate', help='Generate the network')
 parser_generate.add_argument('-e', '--edges', type=int, default=E, help='Number of edges to attach from a new node to existing nodes. Conflicts with --probability.')
 parser_generate.add_argument('--min_weight', type=float, default=MIN_WEIGHT, help='Minimum weight that an edge can have')
 parser_generate.add_argument('--max_weight', type=float, default=MAX_WEIGHT, help='Maximum weight that an edge can have')
-parser_generate.add_argument('--edge_min_bandwidth', type=float, default=EDGE_MAX_BANDWIDTH, help='Minimum bandwidth that an edge can have')
-parser_generate.add_argument('--edge_max_bandwidth', type=float, default=EDGE_MIN_BANDWIDTH, help='Minimum bandwidth that an edge can have')
+parser_generate.add_argument('--edge_min_bandwidth', type=float, default=EDGE_MIN_BANDWIDTH, help='Minimum bandwidth that an edge can have')
+parser_generate.add_argument('--edge_max_bandwidth', type=float, default=EDGE_MAX_BANDWIDTH, help='Minimum bandwidth that an edge can have')
 
 parser_generate.add_argument('--n_nodes', type=int, default=N_NODES, help='Number of server nodes in the network')
 
@@ -38,11 +38,13 @@ parser_generate.add_argument('--task_min_memory', type=float, default=TASK_MIN_M
 parser_generate.add_argument('--task_max_memory', type=float, default=TASK_MAX_MEMORY, help='Maximum memory that a task requires to execute')
 parser_generate.add_argument('--task_min_cpu_usage', type=float, default=TASK_MIN_CPU_USAGE, help='Minimum CPU usage that a task requires to execute')
 parser_generate.add_argument('--task_max_cpu_usage', type=float, default=TASK_MAX_CPU_USAGE, help='Maximum CPU usage that a task requires to execute')
+parser_generate.add_argument('--task_min_request_size', type=int, default=TASK_MIN_REQUEST_SIZE, help='Minimum request size corresponding to a task')
+parser_generate.add_argument('--task_max_request_size', type=int, default=TASK_MAX_REQUEST_SIZE, help='Maximum request size corresponding to a task')
 
 parser_generate.add_argument('--n_users', type=int, default=N_USERS, help='Number of users in the network')
 parser_generate.add_argument('--user_request_size', type=int, default=USER_REQUEST_SIZE, help='Size of user request to be sended/received')
-parser_generate.add_argument('--user_min_pps', type=int, default=USER_MIN_PPS, help='Minimum petitions per second')
-parser_generate.add_argument('--user_max_pps', type=int, default=USER_MAX_PPS, help='Maximum petitions per second')
+parser_generate.add_argument('--user_min_rps', type=int, default=USER_MIN_RPS, help='Minimum requests per second')
+parser_generate.add_argument('--user_max_rps', type=int, default=USER_MAX_RPS, help='Maximum requests per second')
 
 parser_generate.add_argument('-p', '--probability', type=float, choices=[Range(0.0, 1.0)], default=P, help='Probability of a user requesting a service. This probability will only take effect if communities option is not enabled.')
 
@@ -142,7 +144,8 @@ parser_analyze = subparsers.add_parser('analyze', help='Analyze the generated so
 parser_analyze.add_argument('-i', '--input', nargs='+', type=argparse.FileType('r'), help='List of input file paths used for analyzing the solutions')
 parser_analyze.add_argument('--ref_points', type=type_point_list, default=REF_POINTS, help='Specific parameter for algorithms that requiere reference points')
 
-parser_analyze.add_argument('--alg_names', nargs='+', type=str, help='Algorithm names to use on the table')
+parser_analyze.add_argument('--alg_names', nargs='*', type=str, help='Algorithm names to use on the table')
+parser_analyze.add_argument('--pop_values', nargs='*', type=str, help='Population values to use on the table')
 parser_analyze.add_argument('--gen_step', type=int, default=0, help='Generation step used for printing the evolution of each indicator')
 
 parser_analyze.add_argument('--network', type=argparse.FileType('rb'), help='Input file path used for retrieving the network, useful for calculating several needed parameters, like O1 and O2 max values')
@@ -195,6 +198,7 @@ configs.node_memory_pareto_shape = NODE_MEMORY_PARETO_SHAPE
 configs.node_n_cpus_pareto_shape = NODE_N_CPUS_PARETO_SHAPE
 configs.task_memory_pareto_shape = TASK_MEMORY_PARETO_SHAPE
 configs.task_cpu_usage_pareto_shape = TASK_CPU_USAGE_PARETO_SHAPE
+configs.task_request_size_pareto_shape = TASK_REQUEST_SIZE_PARETO_SHAPE
 configs.user_request_size = USER_REQUEST_SIZE
 
 if __name__ == '__main__':

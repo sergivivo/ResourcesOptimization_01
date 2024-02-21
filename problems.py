@@ -185,7 +185,8 @@ class Problem01v3(ElementwiseProblem):
                 'undm': network.getUserNodeDistanceMatrix(),
                 'unhm': network.getUserNodeHopsMatrix(),
                 'tuam': network.getTaskUserAssignmentMatrix(),
-                'trash': 4782389472389479328
+                'tuam_nz': np.transpose(np.nonzero(network.getTaskUserAssignmentMatrix())),
+                'paths': network.getNetworkPaths()
             }
 
         # Values needed for normalization

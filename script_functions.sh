@@ -237,6 +237,30 @@ plot_convergence() {
 		--trim_gen
 }
 
+get_table_files_alg() {
+	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
+
+	TAB_FILES=()
+	for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
+		TAB_FILES[${SEED2}]="$ALY_PREFIX/$SOL_PATH/table_"$SEED2"_"$POP_SIZE
+	done
+
+	echo ${TAB_FILES[*]}
+}
+
+get_table_files_pop() {
+	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
+
+	TAB_FILES=()
+	for SEED2 in $(seq 1 1 $N_EXECUTIONS); do
+		TAB_FILES[${SEED2}]="$ALY_PREFIX/$SOL_PATH/table_"$SEED2"_"$ALGORITHM
+	done
+
+	echo ${TAB_FILES[*]}
+}
+
 get_algorithm_files() {
 	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
 	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
@@ -319,6 +343,32 @@ get_mutation_legend() {
 	echo ${MUT_LEGEND[*]}
 }
 
+get_population_files() {
+	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
+
+	POP_FILES=()
+	i=0
+	for POP_SIZE in ${POP_SIZES[*]}; do
+		SOL_NAME="$(get_solution_filename $ALGORITHM $SEED2 $POP_SIZE $N_GEN $SAMPLING_VERSION $CROSSOVER_VERSION $MUTATION_VERSION $MUTATION_PROB_MOVE $MUTATION_PROB_CHANGE $MUTATION_PROB_BINOMIAL)"
+		POP_FILES[${i}]="$SOL_PREFIX/$SOL_PATH/$SOL_NAME"
+		i=$((i+1))
+	done
+
+	echo ${POP_FILES[*]}
+}
+
+get_population_legend() {
+	POP_LEGEND=()
+	i=0
+	for POP_SIZE in ${POP_SIZES[*]}; do
+		POP_LEGEND[${i}]="P$POP_SIZE"
+		i=$((i+1))
+	done
+
+	echo ${POP_LEGEND[*]}
+}
+
 plot_comparison() {
 	local VAR1=$1
 	local INPUT="${VAR1:=algorithms}"
@@ -336,6 +386,10 @@ plot_comparison() {
 		FILES=$(get_mutation_files)
 		FILE_LEGEND=$(get_mutation_legend)
 		TITLE="mutations"
+	elif [ $INPUT = "population" ]; then
+		FILES=$(get_population_files)
+		FILE_LEGEND=$(get_population_legend)
+		TITLE="populations"
 	fi
 
 	local NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
@@ -360,8 +414,53 @@ plot_comparison() {
 		--title "Objective space - Comparison between $TITLE $SUFFIX - $NODES:$TASKS:$USERS"
 }
 
-send_telegram_message() {
+get_table() {
+	local VAR1=$1
+	local INPUT="${VAR1:=algorithms}"
+	if [ $INPUT = "algorithms" ]; then
+		FILES=$(get_algorithm_files)
+		FILE_LEGEND=${ALGORITHMS[*]}
+		suffix="$POP_SIZE"
+	elif [ $INPUT = "population" ]; then
+		FILES=$(get_population_files)
+		FILE_LEGEND=$(get_population_legend)
+		suffix="$ALGORITHM"
+	fi
 
+	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
+
+	mkdir -p "$ALY_PREFIX/$SOL_PATH"
+	python3 main.py --seed $SEED analyze \
+		--objectives ${OBJECTIVES[*]} \
+		--n_objectives $N_OBJECTIVES $REF_POINTS_OPT $REF_POINTS_STRING \
+		-i $FILES \
+		--alg_name $FILE_LEGEND \
+		--network "$NTW_PREFIX/$NTW_NAME" \
+		--output "$ALY_PREFIX/$SOL_PATH/table_"$SEED2"_$suffix"
+}
+
+get_table_group() {
+	local VAR1=$1
+	local INPUT="${VAR1:=algorithms}"
+	if [ $INPUT = "algorithms" ]; then
+		FILES=$(get_table_files_alg)
+		suffix="$POP_SIZE"
+	elif [ $INPUT = "population" ]; then
+		FILES=$(get_table_files_pop)
+		suffix="$ALGORITHM"
+	fi
+
+	NTW_NAME="$(get_network_filename $SEED $NODES $TASKS $USERS $COMMUNITIES)"
+	SOL_PATH="$(get_solution_path $NTW_NAME $N_REPLICAS $ALGORITHM ${OBJECTIVES[@]})"
+
+	output="$ALY_PREFIX/$SOL_PATH/table_M_$suffix"
+	rm -f $output
+
+	python3 cutre_table.py --input ${FILES[*]} > $output
+}
+
+send_telegram_message() {
 	# Send message using Telegram Bot API to notify that the process has finished
 	ME=$(basename "$0")
 	TOKEN=$(cat ../token.txt)

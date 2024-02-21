@@ -8,9 +8,11 @@ RANDOM_KEYS = [
         'node_memory',
         'node_cpu',
         'task_memory',
-        'tu_assignment',
-        'node_power',
         'task_cpu_usage',
+        'task_requests',
+        'tu_assignment',
+        'tu_rps',
+        'node_power',
         'user_data'
     ]
 
@@ -20,8 +22,8 @@ MIN_WEIGHT = 5.
 MAX_WEIGHT = 20.
 EDGE_MIN_LATENCY = 5.
 EDGE_MAX_LATENCY = 20.
-EDGE_MIN_BANDWIDTH = 500.
-EDGE_MAX_BANDWIDTH = 8000.
+EDGE_MIN_BANDWIDTH = 200.
+EDGE_MAX_BANDWIDTH = 5000.
 
 N_NODES = 10
 NODE_MEMORY_CHOICE = [512, 1024, 2048, 4096]
@@ -49,13 +51,16 @@ TASK_MAX_MEMORY = 1500
 TASK_CPU_USAGE_PARETO_SHAPE = 0.7
 TASK_MIN_CPU_USAGE = 0.01
 TASK_MAX_CPU_USAGE = 1.0
+TASK_REQUEST_SIZE_PARETO_SHAPE = 0.8
+TASK_MIN_REQUEST_SIZE = 10
+TASK_MAX_REQUEST_SIZE = 500
 
 N_USERS = 3
 P = 0.3
 
 USER_REQUEST_SIZE = 50
-USER_MIN_PPS = 0.2
-USER_MAX_PPS = 5.0
+USER_MIN_RPS = 1.
+USER_MAX_RPS = 7.
 
 GROUP_SIZE = 5
 POPULARITY = 0.5

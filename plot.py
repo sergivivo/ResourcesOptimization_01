@@ -101,21 +101,70 @@ def plot_scatter_legend(configs):
     legend = configs.legend if configs.legend else []
     names = legend + [''] * (len(solutions) - len(legend))
 
+    dots_sol = dict()
     if configs.ref_points is not None:
         color = mcolors.TABLEAU_COLORS['tab:cyan']
         if configs.n_objectives == 2:
-            ax.scatter(ref_points[:,0], ref_points[:,1], s=50, facecolors="None", edgecolors=color, label=configs.ref_points_legend, marker='D')
+            dots_sol[configs.ref_points_legend] = ax.scatter(
+                    ref_points[:,0],
+                    ref_points[:,1],
+                    s=50,
+                    facecolors="None",
+                    edgecolors=color,
+                    label=configs.ref_points_legend,
+                    marker='D'
+                )
         elif configs.n_objectives == 3:
-            ax.scatter(ref_points[:,0], ref_points[:,1], ref_points[:,2], s=50, facecolors="None", edgecolors=color, label=configs.ref_points_legend, marker='D')
+            dots_sol[configs.ref_points_legend] = ax.scatter(
+                    ref_points[:,0],
+                    ref_points[:,1],
+                    ref_points[:,2],
+                    s=50,
+                    facecolors="None",
+                    edgecolors=color,
+                    label=configs.ref_points_legend,
+                    marker='D'
+                )
 
     for sol, color, name in zip(solutions, mcolors.TABLEAU_COLORS, names):
         if not np.any(sol): continue
         if configs.n_objectives == 2:
-            ax.scatter(sol[:,0], sol[:,1], s=30, facecolors=color, edgecolors=color, label=name)
+            dots_sol[name] = ax.scatter(
+                    sol[:,0], 
+                    sol[:,1], 
+                    s=30, 
+                    facecolors=color,
+                    edgecolors=color,
+                    label=name
+                )
         elif configs.n_objectives == 3:
-            ax.scatter(sol[:,0], sol[:,1], sol[:,2], s=30, facecolors=color, edgecolors=color, label=name)
+            dots_sol[name] = ax.scatter(
+                    sol[:,0], 
+                    sol[:,1],
+                    sol[:,2],
+                    s=30,
+                    facecolors=color,
+                    edgecolors=color,
+                    label=name
+                )
 
-    ax.legend()
+    leg = ax.legend()
+    for legtext in leg.get_texts():
+        legtext.set_picker(5)
+
+    def on_pick(event):
+        legtext = event.artist
+        name = legtext.get_text()
+        vis = not dots_sol[name].get_visible()
+        dots_sol[name].set_visible(vis)
+        if vis:
+            legtext.set_alpha(1.0)
+        else:
+            legtext.set_alpha(0.2)
+
+        fig.canvas.draw()
+
+    fig.canvas.mpl_connect('pick_event', on_pick)
 
     if configs.output:
         plt.savefig(configs.output)
@@ -213,7 +262,6 @@ def plot_convergence(configs):
         plt.savefig(configs.output)
     else:
         plt.show()
-    
 
 if __name__ == '__main__':
     pass

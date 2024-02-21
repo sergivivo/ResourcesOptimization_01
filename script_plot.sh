@@ -45,7 +45,16 @@ source script_functions.sh
 #	wait $pid
 #done
 
-plot_comparison algorithms
+NODES=50
+TASKS=50
+USERS=25
+
+SEED2=A
+POP_SIZES=($(seq 50 50 300))
+for ALGORITHM in ${ALGORITHMS[*]}; do
+	echo "POP_SIZE = $POP_SIZE"
+	plot_comparison population "with algorithm $ALGORITHM"
+done
 
 #for MUTATION_PROB_MOVE in ${MUTATION_PROB_MOVE_LIST[*]}; do
 #for MUTATION_PROB_CHANGE in ${MUTATION_PROB_CHANGE_LIST[*]}; do
@@ -55,7 +64,7 @@ plot_comparison algorithms
 #for CROSSOVER_VERSION in ${CROSSOVER_VERSION_LIST[*]}; do
 #for MUTATION_VERSION in ${MUTATION_VERSION_LIST[*]}; do
 #
-SEED2=2
+SEED2=1
 plot_convergence
 #
 #done
